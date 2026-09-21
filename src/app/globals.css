@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #0b0b0c;
+  --color-ink-soft: #111113;
+  --color-surface: #18181b;
+  --color-line: #2a2a2e;
+  --color-gold: #c9a45c;
+  --color-gold-soft: #e0c286;
+  --color-gold-deep: #a8823c;
+  --color-ivory: #f3ede2;
+  --color-muted: #a19a8c;
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Cormorant Garamond Variable", Georgia, "Times New Roman", serif;
+}
+
+@layer base {
+  html {
+    background: var(--color-ink);
+    color: var(--color-ivory);
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    font-family: var(--font-sans);
+    min-height: 100dvh;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection {
+    background: var(--color-gold);
+    color: var(--color-ink);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 3px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-full bg-gold px-7 py-3 text-sm font-medium tracking-wide text-ink transition hover:bg-gold-soft;
+  }
+  .btn-outline {
+    @apply inline-flex items-center justify-center rounded-full border border-gold/60 px-7 py-3 text-sm font-medium tracking-wide text-gold transition hover:bg-gold/10;
+  }
+  .eyebrow {
+    @apply text-xs font-medium uppercase tracking-[0.3em] text-gold;
+  }
+  .section-title {
+    @apply font-serif text-3xl font-semibold tracking-wide text-ivory sm:text-4xl;
+  }
+}

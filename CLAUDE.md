@@ -1,0 +1,60 @@
+# LS Imports — E-commerce de perfumaria
+
+Este arquivo é lido em toda sessão. O briefing completo está em `docs/briefing.pdf` (fonte da verdade). Se algo não estiver lá, trate como não definido e pergunte. Responda sempre em português do Brasil.
+
+## Projeto
+- Cliente: LS Imports (Instagram @lss.import), perfumes de várias marcas. Visual preto e dourado, luxuoso, que transmita confiança.
+- Vende para o Brasil todo. Entrega própria e pagamento na entrega apenas em zonas locais.
+- Desenvolvedor responsável: intermediário que revende o projeto ao cliente final. Explique o "porquê" das decisões.
+
+## Stack
+Next.js (App Router) + TypeScript, Tailwind + shadcn/ui, PostgreSQL (Neon ou Supabase), Prisma, Auth.js, Zod + React Hook Form, Cloudinary, Resend, Melhor Envio, ViaCEP (fallback BrasilAPI), Vercel. Testes: Vitest e Playwright.
+Verifique a documentação atual antes de fixar versões e antes de usar APIs de terceiros. Não assuma parâmetros de memória.
+
+## Regras inegociáveis
+1. Nunca armazenar, logar ou trafegar dados de cartão pelo servidor. Usar tokenização do gateway no navegador.
+2. Todo valor em centavos (inteiros). Preço, desconto, frete, parcelas e total são calculados e recalculados no SERVIDOR.
+3. Baixa de estoque atômica em transação, com condição. Nunca vender além do estoque.
+4. Pedido guarda snapshot de nome, preço e endereço.
+5. Webhooks: validar assinatura, ser idempotente e consultar o status na API do gateway.
+6. Pagamentos atrás da interface `PaymentProvider` (o gateway ainda não foi escolhido). Débito online fica atrás de configuração.
+7. Itens PENDENTES viram configuração no painel ou variável de ambiente, com padrão documentado. Nunca inventar CNPJ, WhatsApp, endereço ou taxas.
+8. Segredos só em variáveis de ambiente. `.env` nunca vai para o Git. Rate limit em login, recuperação de senha e cupom. Rotas admin protegidas no servidor.
+9. LGPD: coleta mínima, política de privacidade, logs sem dados pessoais.
+10. Sem urgência artificial (contagem regressiva de carrinho).
+
+## Escopo
+Dentro: catálogo com variações, conta obrigatória, carrinho, cupons, checkout (Pix, cartão crédito e débito, pagamento na entrega), frete Correios (Melhor Envio) e entrega própria por zonas, pedido pronto no WhatsApp, e-mails de status, painel admin com importação CSV.
+Fase 2: avaliações com moderação, relatórios de vendas, nota fiscal.
+Fora: blog, página Sobre, FAQ, feed do Instagram, pixels de anúncio, programa de fidelidade. Páginas legais mínimas são obrigatórias (privacidade, termos, trocas e devoluções).
+
+## Decisões aprovadas (Etapa A concluída)
+- **CPF é pedido no checkout**, não no cadastro. `User.cpf` é opcional no banco e obrigatório para pagar e para nota fiscal.
+- **Avaliações:** o cliente só avalia um produto depois que o admin marca o pedido como ENTREGUE (sem liberação automática por prazo). Se isso gerar poucas avaliações, revisitar.
+- **Primeiro gateway: Mercado Pago (sandbox)**, atrás da interface `PaymentProvider`. Débito online desligado por configuração.
+- Valores padrão das pendências: ver `docs/etapa-a-aprovacao.md`. Modelo de dados aprovado: `prisma/schema.prisma`.
+- **Etapas 1, 2 e 3 concluídas** (base, tema preto e dourado, layout, home, páginas legais em rascunho, catálogo com filtros, facetas, ordenação, paginação, busca e página de produto com seletor de tamanho).
+- **Etapa 4 concluída** (autenticação própria, conta, endereços, lista de pedidos). **Próximo passo: Etapa 5** (carrinho e cupons). CPF só é pedido no checkout (Etapa 6).
+- **Autenticação própria em vez de Auth.js** (decisão da Etapa 4): Auth.js v5 segue em beta e o v4 é legado. Regras em `src/server/auth/service.ts` (sem banco, testáveis), repositório Prisma em `repo.prisma.ts`, cookie em `session.ts`. Sessão no banco (30 dias), senha com scrypt, tokens só em hash, `RateLimit` no banco.
+- Toda página privada chama `requireUser()` (o layout não basta). `getCurrentUser()` lê o cookie primeiro, o que a mantém dinâmica. O cabeçalho NÃO lê cookies (links fixos), para a vitrine continuar em cache.
+- E-mail do cliente não pode ser trocado pela conta (pedir à loja). Admin: papel `ADMIN` existe, criação do primeiro admin fica para a Etapa 9.
+- O seletor de tamanho (`ProductPurchase`) já expõe a variação escolhida; o botão de carrinho entra na Etapa 5. Frete por CEP na página do produto entra na Etapa 7.
+- Prisma fixado em 6.19.3 (`prisma.config.ts` fica para quando migrar para a v7). Next 16, React 19, Tailwind 4.
+
+## Como trabalhar
+- Uma etapa por vez, na ordem da seção 11 do briefing. Só avançar quando eu disser "próxima".
+- Entregar código completo e pronto para rodar, com dados de exemplo (seed) e testes das regras críticas.
+- Ao fim de cada etapa: como testar, o que foi feito, o que falta e riscos. Depois, commit com mensagem descritiva.
+- Se eu pedir algo fora do escopo ou contra as regras acima, explique o impacto em prazo, custo ou risco antes de fazer.
+
+## Comandos
+- Instalar: `npm install` (roda `prisma generate` sozinho)
+- Desenvolvimento: `npm run dev`
+- Checagens: `npm run typecheck`, `npm test`, `npm run build`
+- Banco: `npm run db:migrate -- --name init`, depois `npm run db:constraints`, `npm run db:search` e `npm run db:seed`
+
+## Convenções
+- Regras de negócio em `src/lib` e `src/server` (funções puras e testáveis). Componentes só apresentam.
+- Funções que leem o banco devem cair em fallback seguro (nunca derrubar a página) quando `DATABASE_URL` não existe.
+- Todo texto ao cliente em português do Brasil. Toda regra de dinheiro tem teste em `tests/`.
+- Estilo: Tailwind com os tokens de `src/app/globals.css` (`bg-ink`, `text-gold`, `text-ivory`...). Não usar cores soltas.
