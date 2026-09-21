@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import { addToCartAction } from "@/app/carrinho/actions";
+import { MAX_QTY_PER_ITEM } from "@/lib/cart";
 import { buildInstallments, formatBRL, percentOf, type InstallmentRules } from "@/lib/money";
-import { buildWhatsAppLink } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
+import { buildWhatsAppLink } from "@/lib/whatsapp";
 
 export interface PurchaseVariant {
   id: string;
@@ -16,7 +20,6 @@ export interface PurchaseVariant {
 
 const LOW_STOCK = 3;
 
-// O botão "Adicionar ao carrinho" entra na Etapa 5 e usa o `selected.id` daqui.
 export function ProductPurchase({
   productName,
   brandName,
@@ -32,15 +35,38 @@ export function ProductPurchase({
   pixDiscountPercent: number;
   whatsappNumber: string | null;
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
   const initial = variants.find((v) => v.stockQty > 0) ?? variants[0];
   const [selectedId, setSelectedId] = useState(initial?.id);
+  const [qty, setQty] = useState(1);
+  const [pending, startTransition] = useTransition();
+  const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
+
   const selected = variants.find((v) => v.id === selectedId) ?? initial;
   if (!selected) return <p className="text-muted">Produto indisponível no momento.</p>;
 
   const available = selected.stockQty > 0;
+  const maxQty = Math.max(1, Math.min(selected.stockQty, MAX_QTY_PER_ITEM));
+  const safeQty = Math.min(qty, maxQty);
   const discount = selected.compareAtCents && selected.compareAtCents > selected.priceCents ? Math.round((1 - selected.priceCents / selected.compareAtCents) * 100) : 0;
   const installments = buildInstallments(selected.priceCents, rules).filter((p) => p.count > 1);
   const pixCents = pixDiscountPercent > 0 ? selected.priceCents - percentOf(selected.priceCents, pixDiscountPercent) : null;
+
+  function addToCart() {
+    if (!selected) return;
+    const variantId = selected.id;
+    setFeedback(null);
+    startTransition(async () => {
+      const result = await addToCartAction(variantId, safeQty);
+      if (result.needsLogin) {
+        router.push(`/entrar?next=${encodeURIComponent(pathname)}`);
+        return;
+      }
+      setFeedback({ ok: result.ok, text: result.message });
+      if (result.ok && typeof result.count === "number") window.dispatchEvent(new CustomEvent("cart:count", { detail: result.count }));
+    });
+  }
 
   return (
     <div>
@@ -55,7 +81,10 @@ export function ProductPurchase({
               type="button"
               role="radio"
               aria-checked={active}
-              onClick={() => setSelectedId(v.id)}
+              onClick={() => {
+                setSelectedId(v.id);
+                setFeedback(null);
+              }}
               className={cn("rounded-full border px-5 py-2 text-sm transition", active ? "border-gold bg-gold text-ink" : "border-line text-ivory/85 hover:border-gold/60", out && !active && "opacity-60")}
             >
               {v.label}
@@ -101,16 +130,44 @@ export function ProductPurchase({
         </details>
       )}
 
-      {whatsappNumber && (
-        <a
-          href={buildWhatsAppLink(whatsappNumber, `Olá! Tenho interesse no perfume ${productName} (${brandName}), tamanho ${selected.label}.`)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn-outline"
-        >
-          Perguntar no WhatsApp
-        </a>
+      {available && (
+        <div className="mb-4 flex items-center gap-3">
+          <label htmlFor="quantidade" className="text-sm text-ivory/85">
+            Quantidade
+          </label>
+          <select id="quantidade" value={safeQty} onChange={(e) => setQty(Number(e.target.value))} className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ivory focus:border-gold focus:outline-none">
+            {Array.from({ length: maxQty }, (_, i) => i + 1).map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </div>
       )}
+
+      <div className="flex flex-wrap gap-3">
+        <button type="button" onClick={addToCart} disabled={!available || pending} className="btn-primary disabled:cursor-not-allowed disabled:opacity-60">
+          {!available ? "Indisponível" : pending ? "Adicionando..." : "Adicionar ao carrinho"}
+        </button>
+        {whatsappNumber && (
+          <a href={buildWhatsAppLink(whatsappNumber, `Olá! Tenho interesse no perfume ${productName} (${brandName}), tamanho ${selected.label}.`)} target="_blank" rel="noopener noreferrer" className="btn-outline">
+            Perguntar no WhatsApp
+          </a>
+        )}
+      </div>
+
+      <div aria-live="polite" className="mt-4 min-h-6">
+        {feedback && (
+          <p role="status" className={cn("text-sm", feedback.ok ? "text-gold" : "text-red-300")}>
+            {feedback.text}{" "}
+            {feedback.ok && (
+              <Link href="/carrinho" className="underline underline-offset-2 hover:text-gold-soft">
+                Ver carrinho
+              </Link>
+            )}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

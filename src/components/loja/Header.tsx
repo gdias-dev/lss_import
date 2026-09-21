@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { NAV_LINKS } from "@/lib/nav";
+import { CartBadge } from "@/components/carrinho/CartBadge";
 import { Logo } from "./Logo";
 import { MobileMenu } from "./MobileMenu";
 
 // O link da conta é fixo (/conta manda para o login se preciso): assim o cabeçalho não lê cookies e as páginas continuam em cache.
-// O ícone do carrinho entra na Etapa 5.
+// O número do carrinho vem de um componente de navegador (CartBadge), sem ler cookies aqui.
 export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-ink/90 backdrop-blur">
@@ -41,6 +42,7 @@ export function Header() {
           </svg>
           <span className="hidden lg:inline">Minha conta</span>
         </Link>
+        <CartBadge />
       </div>
     </header>
   );

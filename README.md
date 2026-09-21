@@ -12,7 +12,7 @@ Escopo completo: [`docs/briefing.pdf`](docs/briefing.pdf). Decisões aprovadas e
 | 2. Design system e layout | Concluída (home, cabeçalho, rodapé, WhatsApp, páginas legais em rascunho) |
 | 3. Catálogo | Concluída: filtros (gênero, marca, concentração, família olfativa, tamanho, preço, disponibilidade), ordenação, paginação, busca sem acento e tolerante a erro de digitação, página de produto com seletor de tamanho, galeria e relacionados |
 | 4. Conta e autenticação | Concluída: cadastro, login, sair, confirmação de e-mail, recuperação de senha, dados, endereços com busca de CEP, lista de pedidos |
-| 5. Carrinho e cupons | Pendente |
+| 5. Carrinho e cupons | Concluída: adicionar pela página do produto, quantidade com limite de estoque, cupons (percentual, valor fixo, frete grátis), desconto no Pix e progresso do frete grátis |
 | 6. Checkout e pagamentos (Mercado Pago) | Pendente |
 | 7. Frete e entrega própria | Pendente |
 | 8. WhatsApp do pedido e e-mails | Pendente (a função da mensagem já existe e tem teste) |
@@ -35,7 +35,7 @@ npm install
 npm run db:migrate -- --name init   # (se o banco já existe, nas próximas etapas use --name auth, e assim por diante)
 npm run db:constraints        # estoque nunca negativo (pode repetir)
 npm run db:search             # ativa a busca sem acento e tolerante a erro (pode repetir)
-npm run db:seed               # 12 perfumes fictícios para testar
+npm run db:seed               # 12 perfumes fictícios e 3 cupons de exemplo (BEMVINDO10, OFF20, FRETEGRATIS)
 npm run dev                   # http://localhost:3000
 ```
 

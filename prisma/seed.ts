@@ -1,5 +1,5 @@
 /* Dados FICTÍCIOS para desenvolvimento. Marcas e perfumes inventados. Idempotente: pode rodar várias vezes. */
-import { Concentration, Gender, PrismaClient } from "@prisma/client";
+import { Concentration, CouponType, Gender, PrismaClient } from "@prisma/client";
 import { DEFAULT_SETTINGS } from "../src/lib/settings-defaults";
 
 const prisma = new PrismaClient();
@@ -63,6 +63,14 @@ async function main() {
     }
   }
 
+  // Cupons de EXEMPLO para testar o carrinho. Não sobrescreve se o dono já mudou algum.
+  const COUPONS = [
+    { code: "BEMVINDO10", type: CouponType.PERCENT, value: 10, minSubtotalCents: 0, perUserLimit: 1 },
+    { code: "OFF20", type: CouponType.FIXED, value: 2000, minSubtotalCents: 15000, perUserLimit: null },
+    { code: "FRETEGRATIS", type: CouponType.FREE_SHIPPING, value: 0, minSubtotalCents: 20000, perUserLimit: null },
+  ];
+  for (const c of COUPONS) await prisma.coupon.upsert({ where: { code: c.code }, update: {}, create: c });
+
   // Configurações: só cria as que faltam (não sobrescreve o que o dono já mudou).
   await prisma.setting.createMany({
     data: Object.entries(DEFAULT_SETTINGS).map(([key, value]) => ({ key, value: value as never })),
@@ -76,7 +84,7 @@ async function main() {
     });
   }
 
-  console.log(`Seed concluído: ${BRANDS.length} marcas, ${PRODUCTS.length} produtos.`);
+  console.log(`Seed concluído: ${BRANDS.length} marcas, ${PRODUCTS.length} produtos, ${COUPONS.length} cupons (BEMVINDO10, OFF20, FRETEGRATIS).`);
 }
 
 main()
