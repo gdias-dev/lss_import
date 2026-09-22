@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useActionState, useState } from "react";
 import { saveBannerAction } from "@/app/admin/banners/actions";
 import { Field } from "@/components/ui/Field";
@@ -30,7 +31,11 @@ export function BannerForm({ defaults }: { defaults: BannerDefaults }) {
 
       <div>
         <p className="mb-2 text-sm text-ivory/85">Imagem</p>
-        {imageUrl && <img src={imageUrl} alt="" className="mb-3 h-32 w-full rounded-xl border border-line object-cover" />}
+        {imageUrl && (
+          <div className="relative mb-3 h-32 w-full overflow-hidden rounded-xl border border-line">
+            <Image src={imageUrl} alt="" fill sizes="512px" className="object-cover" />
+          </div>
+        )}
         <ImageUploader onUploaded={(img) => setImageUrl(img.url)} />
         <input type="hidden" name="imageUrl" value={imageUrl} />
         {fe?.imageUrl?.[0] && (

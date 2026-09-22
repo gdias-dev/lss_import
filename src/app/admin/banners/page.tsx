@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { deleteBannerAction } from "@/app/admin/banners/actions";
 import { requireAdmin } from "@/server/auth/guards";
@@ -25,7 +26,9 @@ export default async function AdminBannersPage() {
         <ul className="grid gap-5 sm:grid-cols-2">
           {banners.map((b) => (
             <li key={b.id} className="overflow-hidden rounded-2xl border border-line bg-surface">
-              <img src={b.imageUrl} alt="" className="h-32 w-full object-cover" />
+              <div className="relative h-32 w-full">
+                <Image src={b.imageUrl} alt="" fill sizes="400px" className="object-cover" />
+              </div>
               <div className="p-4">
                 <p className="text-ivory">{b.title || "(sem título)"}</p>
                 <p className="text-sm text-muted">Posição {b.position} · {b.active ? "Ativo" : "Inativo"}</p>

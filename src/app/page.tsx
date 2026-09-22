@@ -4,6 +4,7 @@ import { ProductCard } from "@/components/loja/ProductCard";
 import { listProducts } from "@/lib/catalog";
 import { getWhatsAppNumber } from "@/lib/env";
 import { installmentRules, getSettings } from "@/lib/settings";
+import { siteUrl } from "@/lib/env";
 import { buildWhatsAppLink } from "@/lib/whatsapp";
 
 export const revalidate = 60;
@@ -32,8 +33,17 @@ export default async function HomePage() {
     { title: "Entrega para todo o Brasil", text: "Frete calculado automaticamente pelo seu CEP." },
   ];
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "OnlineStore",
+    name: settings.storeName,
+    url: siteUrl,
+    ...(settings.instagramUrl ? { sameAs: [settings.instagramUrl] } : {}),
+  };
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <section className="relative overflow-hidden border-b border-line bg-[radial-gradient(ellipse_at_top,rgba(201,164,92,0.18),transparent_60%)]">
         <div className="container-page flex min-h-[70vh] flex-col items-center justify-center py-24 text-center">
           <p className="eyebrow mb-6">Perfumes &amp; Importados</p>

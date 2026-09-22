@@ -55,6 +55,10 @@ Nenhuma delas tem mensalidade fixa. Cada uma cobra do seu jeito:
 
 Preços de serviços de terceiros mudam sem aviso — antes de decidir algo com base neles, confirme no site oficial de cada um.
 
+## Checklist de publicação
+
+Consulte [`docs/GO-LIVE.md`](GO-LIVE.md) para o passo a passo ordenado de ir ao ar — este arquivo aqui é a lista solta do que falta; aquele é a ordem de execução.
+
 ## Fase 2 (depois do site no ar)
 
 - [ ] Emissor de nota fiscal (Focus NFe, Bling ou Tiny) — precisa do CNPJ e de um contador definindo os dados fiscais.

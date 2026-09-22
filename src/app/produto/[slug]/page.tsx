@@ -8,6 +8,9 @@ import { getProductBySlug, getRelatedProducts } from "@/lib/catalog";
 import { CONCENTRATION_LABEL, GENDER_LABEL } from "@/lib/catalog-filters";
 import { getWhatsAppNumber } from "@/lib/env";
 import { installmentRules, getSettings } from "@/lib/settings";
+import { siteUrl } from "@/lib/env";
+
+export const revalidate = 60; // segunda camada: mesmo que uma revalidação explícita falhe, a página nunca fica velha por mais de 1 minuto
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -45,6 +48,17 @@ export default async function ProductPage({ params }: Props) {
     ["Ocasião", product.occasion],
   ].filter((d): d is [string, string] => Boolean(d[1]));
 
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Início", item: siteUrl },
+      { "@type": "ListItem", position: 2, name: "Perfumes", item: `${siteUrl}/perfumes` },
+      { "@type": "ListItem", position: 3, name: product.brand.name, item: `${siteUrl}/perfumes?marca=${product.brand.slug}` },
+      { "@type": "ListItem", position: 4, name: product.name, item: `${siteUrl}/produto/${product.slug}` },
+    ],
+  };
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -67,6 +81,7 @@ export default async function ProductPage({ params }: Props) {
   return (
     <div className="container-page py-10">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd).replace(/</g, "\\u003c") }} />
 
       <nav aria-label="Você está em" className="mb-8 text-xs text-muted">
         <ol className="flex flex-wrap items-center gap-2">

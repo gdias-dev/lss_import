@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { ImageUploader } from "@/components/admin/ImageUploader";
 
@@ -16,7 +17,7 @@ export function PendingImages() {
         <ul className="mb-4 grid grid-cols-3 gap-3 sm:grid-cols-4">
           {urls.map((url) => (
             <li key={url} className="group relative aspect-square overflow-hidden rounded-xl border border-line">
-              <img src={url} alt="" className="h-full w-full object-cover" />
+              <Image src={url} alt="" fill sizes="150px" className="object-cover" />
               <input type="hidden" name="imageUrls" value={url} />
               <button
                 type="button"

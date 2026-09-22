@@ -20,6 +20,7 @@ import {
 import { buildProductsCsv } from "@/server/admin/csv";
 import { importProductsFromCsv } from "@/server/admin/csv-import";
 import { prisma } from "@/lib/prisma";
+import { checkRateLimits, rateLimitMessage } from "@/server/rate-limit";
 
 export async function saveProductAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const admin = await requireAdmin();
@@ -105,6 +106,9 @@ export interface CsvImportState extends FormState {
 
 export async function importCsvAction(_prev: CsvImportState, formData: FormData): Promise<CsvImportState> {
   const admin = await requireAdmin();
+  const limit = await checkRateLimits([{ key: `csv-import:admin:${admin.id}`, limit: 10, windowSeconds: 3600 }]);
+  if (!limit.ok) return { error: rateLimitMessage(limit.retryAfterSeconds) };
+
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) return { error: "Selecione um arquivo CSV." };
   if (file.size > 2 * 1024 * 1024) return { error: "Arquivo muito grande (máximo 2 MB)." };

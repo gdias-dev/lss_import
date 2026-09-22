@@ -17,7 +17,7 @@ Escopo completo: [`docs/briefing.pdf`](docs/briefing.pdf). Decisões aprovadas e
 | 7. Frete e entrega própria | Concluída: cotação real dos Correios/transportadoras via Melhor Envio no checkout, com tabela de contingência se a API falhar; compra de etiqueta e rastreio prontos para o painel (Etapa 9) |
 | 8. WhatsApp do pedido e e-mails | Concluída: e-mails de status (pedido recebido, pagamento confirmado, cancelado) e aviso ao dono a cada novo pedido; enviado/entregue prontos para o painel (Etapa 9) ligar |
 | 9. Painel admin | Concluída: produtos com variações e fotos, importação/exportação CSV, pedidos com mudança de status, cupons, zonas de entrega, configurações, banners, log de auditoria |
-| 10. Qualidade e go-live | Pendente |
+| 10. Qualidade e go-live | Concluída: correção de cache do catálogo, cabeçalho de segurança (CSP), dados estruturados de SEO, checklist de go-live |
 | 11. Fase 2: avaliações, relatórios, nota fiscal | Pendente |
 
 ## Requisitos
@@ -71,9 +71,10 @@ tests/           Vitest
 docs/            briefing e decisões
 ```
 
-## Pendências (o que falta e não depende de código)
+## Pendências e go-live
 
-Veja [`docs/PENDENCIAS.md`](docs/PENDENCIAS.md) para a lista completa e sempre atualizada: credenciais do Mercado Pago, configuração do cron de expiração do Pix, decisões do cliente e o que falta para publicar de verdade.
+- [`docs/PENDENCIAS.md`](docs/PENDENCIAS.md): o que falta e não depende de código — credenciais, contas, decisões do cliente.
+- [`docs/GO-LIVE.md`](docs/GO-LIVE.md): checklist passo a passo para publicar de verdade, na ordem certa.
 
 ## Antes de publicar
 
@@ -133,4 +134,8 @@ Em produção defina `RESEND_API_KEY`, `EMAIL_FROM` (domínio verificado no Rese
 
 ## Segurança
 
-Nunca commite o `.env`. Dados de cartão nunca passam pelo servidor.
+Nunca commite o `.env`. Dados de cartão nunca passam pelo servidor. Cabeçalhos de segurança (incluindo Content-Security-Policy) em `next.config.ts` — a CSP libera o SDK do Mercado Pago e o Cloudinary; teste um pagamento real e olhe o console do navegador antes de publicar (veja `docs/GO-LIVE.md`).
+
+## Cache e revalidação
+
+Páginas públicas (`/`, `/produto/[slug]`) podem ficar em cache do Next.js. Toda ação do admin que muda um produto, variação, imagem ou banner já revalida as páginas afetadas (`src/server/admin/products.ts`, `revalidateStorefront()`). Ao criar uma nova tela de admin que edita algo visível na loja, lembre de revalidar o caminho correspondente — é fácil esquecer e a mudança "não aparecer" para o cliente.

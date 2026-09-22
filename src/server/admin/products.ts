@@ -1,5 +1,13 @@
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { logAdminAction } from "@/server/audit/log";
+
+/** Toda mudança de produto pode afetar a home (destaques), a listagem e a própria página do produto. */
+function revalidateStorefront(slug?: string | null) {
+  revalidatePath("/");
+  revalidatePath("/perfumes");
+  if (slug) revalidatePath(`/produto/${slug}`);
+}
 
 export const listBrands = () => prisma.brand.findMany({ orderBy: { name: "asc" } });
 
@@ -63,6 +71,7 @@ export async function createProduct(adminId: string, input: ProductInput): Promi
   const slug = await uniqueProductSlug(input.name);
   const product = await prisma.product.create({ data: { ...input, slug } });
   await logAdminAction(adminId, "CREATE", "Product", product.id, null, product);
+  revalidateStorefront(slug);
   return product.id;
 }
 
@@ -72,6 +81,8 @@ export async function updateProduct(adminId: string, id: string, input: ProductI
   const slug = before.name !== input.name ? await uniqueProductSlug(input.name, id) : before.slug;
   const after = await prisma.product.update({ where: { id }, data: { ...input, slug } });
   await logAdminAction(adminId, "UPDATE", "Product", id, before, after);
+  revalidateStorefront(slug);
+  if (slug !== before.slug) revalidatePath(`/produto/${before.slug}`); // o endereço antigo precisa passar a mostrar 404
 }
 
 export async function toggleProductActive(adminId: string, id: string): Promise<void> {
@@ -79,6 +90,7 @@ export async function toggleProductActive(adminId: string, id: string): Promise<
   if (!before) return;
   const after = await prisma.product.update({ where: { id }, data: { active: !before.active } });
   await logAdminAction(adminId, after.active ? "ACTIVATE" : "DEACTIVATE", "Product", id, before, after);
+  revalidateStorefront(before.slug);
 }
 
 // ------------------------------------------------------------ variações
@@ -106,10 +118,11 @@ export async function createVariant(adminId: string, productId: string, input: V
   while (await prisma.productVariant.findUnique({ where: { sku } })) sku = `${skuFor(product.slug, input.sizeMl)}-${++n}`;
   const variant = await prisma.productVariant.create({ data: { ...input, productId, sku } });
   await logAdminAction(adminId, "CREATE", "ProductVariant", variant.id, null, variant);
+  revalidateStorefront(product.slug);
 }
 
 export async function updateVariant(adminId: string, id: string, input: VariantInput): Promise<void> {
-  const before = await prisma.productVariant.findUnique({ where: { id } });
+  const before = await prisma.productVariant.findUnique({ where: { id }, include: { product: { select: { slug: true } } } });
   if (!before) throw new Error("Variação não encontrada.");
   const after = await prisma.$transaction(async (tx) => {
     const updated = await tx.productVariant.update({ where: { id }, data: input });
@@ -119,35 +132,39 @@ export async function updateVariant(adminId: string, id: string, input: VariantI
     return updated;
   });
   await logAdminAction(adminId, "UPDATE", "ProductVariant", id, before, after);
+  revalidateStorefront(before.product.slug);
 }
 
 export async function deleteVariant(adminId: string, id: string): Promise<void> {
-  const before = await prisma.productVariant.findUnique({ where: { id } });
+  const before = await prisma.productVariant.findUnique({ where: { id }, include: { product: { select: { slug: true } } } });
   if (!before) return;
   const usedInOrder = await prisma.orderItem.findFirst({ where: { variantId: id } });
   if (usedInOrder) {
     // preserva o histórico de pedidos: só desativa, nunca apaga uma variação já vendida
     await prisma.productVariant.update({ where: { id }, data: { active: false } });
     await logAdminAction(adminId, "DEACTIVATE", "ProductVariant", id, before, { reason: "tem pedidos associados, apenas desativada" });
-    return;
+  } else {
+    await prisma.productVariant.delete({ where: { id } });
+    await logAdminAction(adminId, "DELETE", "ProductVariant", id, before, null);
   }
-  await prisma.productVariant.delete({ where: { id } });
-  await logAdminAction(adminId, "DELETE", "ProductVariant", id, before, null);
+  revalidateStorefront(before.product.slug);
 }
 
 // ------------------------------------------------------------ imagens
 
 export async function addProductImage(adminId: string, productId: string, url: string, alt: string | null): Promise<void> {
-  const count = await prisma.productImage.count({ where: { productId } });
+  const [count, product] = await Promise.all([prisma.productImage.count({ where: { productId } }), prisma.product.findUnique({ where: { id: productId }, select: { slug: true } })]);
   const image = await prisma.productImage.create({ data: { productId, url, alt, position: count } });
   await logAdminAction(adminId, "CREATE", "ProductImage", image.id, null, image);
+  revalidateStorefront(product?.slug);
 }
 
 export async function deleteProductImage(adminId: string, imageId: string): Promise<void> {
-  const before = await prisma.productImage.findUnique({ where: { id: imageId } });
+  const before = await prisma.productImage.findUnique({ where: { id: imageId }, include: { product: { select: { slug: true } } } });
   if (!before) return;
   await prisma.productImage.delete({ where: { id: imageId } });
   await logAdminAction(adminId, "DELETE", "ProductImage", imageId, before, null);
+  revalidateStorefront(before.product.slug);
 }
 
 export async function reorderProductImages(adminId: string, productId: string, orderedIds: string[]): Promise<void> {
