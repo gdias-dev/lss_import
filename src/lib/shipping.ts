@@ -1,7 +1,8 @@
 /**
- * Cálculo de frete. PLACEHOLDER dos Correios por região do CEP: a Etapa 7 troca isso pela cotação
- * real do Melhor Envio, mantendo esta mesma forma de saída (ShippingOption), então o checkout não muda.
- * Entrega própria usa as zonas cadastradas no painel (faixa de CEP e/ou lista de bairros).
+ * Cálculo de frete. Os Correios e demais transportadoras vêm da cotação real do Melhor Envio
+ * (src/server/shipping/melhorenvio.ts). A tabela abaixo é só CONTINGÊNCIA: entra em ação quando o
+ * Melhor Envio não está configurado (token ausente) ou a chamada falha, para o checkout nunca travar
+ * por causa disso. Entrega própria usa as zonas cadastradas no painel (faixa de CEP e/ou bairro).
  */
 import { cepInRange, normalizeCep } from "./cep";
 import { formatBRL } from "./money";
@@ -35,14 +36,15 @@ const CORREIOS_TABLE: Record<string, { pac: { base: number; perKg: number; days:
 
 const kg = (grams: number) => Math.max(1, Math.ceil(grams / 1000)); // fração de kg conta como 1kg a mais
 
-export function correiosPlaceholderOptions(cep: string, weightGrams: number): ShippingOption[] {
+/** Tabela de contingência — só usada quando a cotação real do Melhor Envio não está disponível. */
+export function correiosFallbackOptions(cep: string, weightGrams: number): ShippingOption[] {
   const digit = normalizeCep(cep).charAt(0);
   const table = CORREIOS_TABLE[digit] ?? CORREIOS_TABLE["1"]!;
   const extraKg = kg(weightGrams) - 1;
   const cost = (t: { base: number; perKg: number; days: number }) => t.base + extraKg * t.perKg;
   return [
-    { key: "correios-pac", method: "CORREIOS", service: "PAC", label: `Correios PAC (até ${table.pac.days} dias úteis)`, costCents: cost(table.pac), etaDays: table.pac.days, allowsPayOnDelivery: false, zoneId: null },
-    { key: "correios-sedex", method: "CORREIOS", service: "SEDEX", label: `Correios SEDEX (até ${table.sedex.days} dias úteis)`, costCents: cost(table.sedex), etaDays: table.sedex.days, allowsPayOnDelivery: false, zoneId: null },
+    { key: "correios-fallback-pac", method: "CORREIOS", service: "PAC (estimativa)", label: `Correios PAC — estimativa (até ${table.pac.days} dias úteis)`, costCents: cost(table.pac), etaDays: table.pac.days, allowsPayOnDelivery: false, zoneId: null },
+    { key: "correios-fallback-sedex", method: "CORREIOS", service: "SEDEX (estimativa)", label: `Correios SEDEX — estimativa (até ${table.sedex.days} dias úteis)`, costCents: cost(table.sedex), etaDays: table.sedex.days, allowsPayOnDelivery: false, zoneId: null },
   ];
 }
 
@@ -73,10 +75,13 @@ export interface BuildOptionsInput {
   pickupEnabled: boolean;
   subtotalCentsForFreeShipping: number; // total dos produtos após cupom, usado contra o mínimo de frete grátis
   globalFreeShipping: boolean; // cupom de frete grátis ou valor mínimo geral da loja atingido
+  /** Cotações reais já buscadas no Melhor Envio (server/shipping/melhorenvio.ts). Vazio = sem cotação disponível. */
+  liveCorreiosOptions?: ShippingOption[];
 }
 
 export function buildShippingOptions(input: BuildOptionsInput): ShippingOption[] {
-  const options = correiosPlaceholderOptions(input.cep, input.weightGrams);
+  // nunca mutar o array recebido (ele pode vir de um cache de cotação reaproveitado em outra chamada)
+  const options = [...(input.liveCorreiosOptions && input.liveCorreiosOptions.length > 0 ? input.liveCorreiosOptions : correiosFallbackOptions(input.cep, input.weightGrams))];
 
   const zone = matchDeliveryZone(input.zones, input.cep, input.neighborhood);
   if (zone) {

@@ -14,7 +14,7 @@ Escopo completo: [`docs/briefing.pdf`](docs/briefing.pdf). Decisões aprovadas e
 | 4. Conta e autenticação | Concluída: cadastro, login, sair, confirmação de e-mail, recuperação de senha, dados, endereços com busca de CEP, lista de pedidos |
 | 5. Carrinho e cupons | Concluída: adicionar pela página do produto, quantidade com limite de estoque, cupons (percentual, valor fixo, frete grátis), desconto no Pix e progresso do frete grátis |
 | 6. Checkout e pagamentos (Mercado Pago) | Concluída: endereço, frete (placeholder Correios + zonas locais), Pix com QR Code, cartão de crédito/débito (Secure Fields), pagamento na entrega, webhook, expiração e cancelamento com devolução de estoque |
-| 7. Frete e entrega própria | Parcial: zonas de entrega própria prontas; falta trocar o placeholder dos Correios pela cotação real (Melhor Envio) |
+| 7. Frete e entrega própria | Concluída: cotação real dos Correios/transportadoras via Melhor Envio no checkout, com tabela de contingência se a API falhar; compra de etiqueta e rastreio prontos para o painel (Etapa 9) |
 | 8. WhatsApp do pedido e e-mails | Pendente (a função da mensagem já existe e tem teste) |
 | 9. Painel admin | Pendente |
 | 10. Qualidade e go-live | Pendente |
@@ -70,6 +70,10 @@ tests/           Vitest
 docs/            briefing e decisões
 ```
 
+## Pendências (o que falta e não depende de código)
+
+Veja [`docs/PENDENCIAS.md`](docs/PENDENCIAS.md) para a lista completa e sempre atualizada: credenciais do Mercado Pago, configuração do cron de expiração do Pix, decisões do cliente e o que falta para publicar de verdade.
+
 ## Antes de publicar
 
 - Substituir o logo provisório em texto (`src/components/loja/Logo.tsx`) pelo arquivo oficial do cliente e ajustar as cores em `src/app/globals.css`.
@@ -89,7 +93,14 @@ Variáveis necessárias:
 
 Fluxo: o checkout recalcula tudo no servidor (preço, estoque, cupom, frete), reserva o estoque de forma atômica, cria o pedido e só depois fala com o gateway. Pix expira em `pixExpirationMinutes` (padrão 30). O cron `/api/cron/expirar-pix` cancela pedidos de Pix vencidos e devolve o estoque — o plano gratuito da Vercel só permite cron diário, então configure um serviço externo como o cron-job.org batendo nessa URL a cada 10-15 minutos com o cabeçalho `Authorization: Bearer <CRON_SECRET>`, ou rode manualmente enquanto isso não estiver resolvido.
 
-Frete: nesta etapa, os Correios usam uma **tabela provisória** por região do CEP (`src/lib/shipping.ts`) — a Etapa 7 troca isso pela cotação real do Melhor Envio, sem mudar o checkout. A entrega própria já usa as zonas cadastradas no banco (o seed cria uma no Centro do Rio).
+Frete: os Correios e transportadoras parceiras usam a cotação real do **Melhor Envio** (`src/server/shipping/melhorenvio.ts`). Se o token não estiver configurado ou a API falhar, o site cai sozinho para uma tabela de contingência (`src/lib/shipping.ts`) — o cliente sempre vê algum preço, nunca uma tela quebrada. A entrega própria usa as zonas cadastradas no banco (o seed cria uma no Centro do Rio).
+
+Variáveis do Melhor Envio (veja `docs/PENDENCIAS.md` para o passo a passo de criar a conta e o token):
+- `MELHORENVIO_TOKEN` — token gerado direto no painel do Melhor Envio (sem OAuth, é o certo para uma loja só)
+- `MELHORENVIO_SANDBOX` — `true` em desenvolvimento; mude para `false` em produção
+- `STORE_ORIGIN_CEP` — CEP de onde a loja despacha (obrigatório para a cotação funcionar)
+
+Compra de etiqueta, impressão e rastreio já estão prontos em `src/server/shipping/melhorenvio.ts`, mas **sem botão na tela ainda** — a Etapa 9 (painel admin) vai chamar essas funções quando o lojista marcar um pedido como "Enviado".
 
 ## Autenticação
 

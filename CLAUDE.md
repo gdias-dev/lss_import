@@ -34,7 +34,10 @@ Fora: blog, página Sobre, FAQ, feed do Instagram, pixels de anúncio, programa 
 - **Primeiro gateway: Mercado Pago (sandbox)**, atrás da interface `PaymentProvider`. Débito online desligado por configuração.
 - Valores padrão das pendências: ver `docs/etapa-a-aprovacao.md`. Modelo de dados aprovado: `prisma/schema.prisma`.
 - **Etapas 1, 2 e 3 concluídas** (base, tema preto e dourado, layout, home, páginas legais em rascunho, catálogo com filtros, facetas, ordenação, paginação, busca e página de produto com seletor de tamanho).
-- **Etapas 1 a 6 concluídas** (base, tema, catálogo, autenticação, carrinho e checkout com Mercado Pago). **Próximo passo: Etapa 7** — trocar o placeholder de frete dos Correios (`src/lib/shipping.ts`) pela cotação real do Melhor Envio, mantendo a mesma saída (`ShippingOption`) para o checkout não mudar.
+- **Etapas 1 a 7 concluídas** (base, tema, catálogo, autenticação, carrinho, checkout com Mercado Pago, frete real com Melhor Envio). **Próximo passo: Etapa 8** (pedido pronto no WhatsApp — a função já existe e tem teste, falta só o e-mail de status ficar mais completo) ou já adiantar a Etapa 9 (painel admin), que é o maior bloco que falta.
+- **Frete:** `src/server/shipping/melhorenvio.ts` faz a cotação real (Correios e parceiros) via `/api/v2/me/shipment/calculate`, usando token único da loja (sem OAuth). NUNCA testado contra a API de verdade (sem internet neste ambiente) — revisar em sandbox. Se o token faltar ou a chamada falhar, `src/lib/shipping.ts` cai sozinho para uma tabela de contingência (nunca lança erro, o checkout não pode travar por causa disso).
+- **Compra de etiqueta e rastreio já estão na camada de serviço** (`addShipmentToCart`, `checkoutShipments`, `generateLabels`, `printLabels`, `trackShipments`), mas sem UI — ligar isso no painel admin (Etapa 9), no botão de marcar pedido como enviado.
+
 - **Pagamentos:** interface `PaymentProvider` em `src/server/payments/`, implementação Mercado Pago em `mercadopago.ts` (`/v1/payments`). NUNCA testado contra credenciais reais (sem internet neste ambiente) — revisar em sandbox. Núcleo do checkout em `src/server/checkout.ts`: recalcula tudo no servidor, reserva estoque em transação, cria o pedido, e só DEPOIS fala com o gateway (nunca segurar uma transação de banco esperando rede). Falha no gateway cancela o pedido e devolve o estoque (`cancelAndRestoreStock`).
 - **Webhook** em `/api/webhooks/mercadopago`: valida assinatura HMAC (`MP_WEBHOOK_SECRET`), idempotente via `WebhookEvent` (provider+eventId), sempre confirma o status consultando a API antes de mudar o pedido (nunca confia só no payload). Reconciliação (`reconcilePayment`) é usada tanto pelo webhook quanto pelo polling da tela de confirmação do Pix.
 - **Expiração do Pix:** `reservedUntil` no pedido; cron `/api/cron/expirar-pix` de hora em hora no `vercel.json` — mas o plano gratuito da Vercel só roda cron diário; documentado no README (usar cron-job.org ou rodar à mão).
@@ -54,6 +57,10 @@ Fora: blog, página Sobre, FAQ, feed do Instagram, pixels de anúncio, programa 
 - Entregar código completo e pronto para rodar, com dados de exemplo (seed) e testes das regras críticas.
 - Ao fim de cada etapa: como testar, o que foi feito, o que falta e riscos. Depois, commit com mensagem descritiva.
 - Se eu pedir algo fora do escopo ou contra as regras acima, explique o impacto em prazo, custo ou risco antes de fazer.
+
+## Pendências externas
+
+Sempre que uma etapa gerar uma pendência que não dá para resolver escrevendo código (precisa de uma conta, um domínio, uma decisão do cliente etc.), adicione em `docs/PENDENCIAS.md` em vez de só mencionar no chat. Ao concluir uma pendência, marque como resolvida lá.
 
 ## Comandos
 - Instalar: `npm install` (roda `prisma generate` sozinho)

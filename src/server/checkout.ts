@@ -8,6 +8,7 @@ import { buildInstallments, formatBRL, percentOf } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 import { installmentRules, getSettings, type StoreSettings } from "@/lib/settings";
 import { buildShippingOptions, findShippingOption, type ShippingOption } from "@/lib/shipping";
+import { cartLineToQuoteProduct, fetchLiveShippingOptions } from "./shipping/melhorenvio";
 import { getCartView } from "./cart";
 import { getPaymentProvider, PaymentProviderError, type Payer } from "./payments";
 
@@ -29,9 +30,8 @@ async function loadActiveZones() {
   return zones.map((z) => ({ id: z.id, name: z.name, feeCents: z.feeCents, freeAboveCents: z.freeAboveCents, neighborhoods: z.neighborhoods, allowsPayOnDelivery: z.allowsPayOnDelivery, estimatedDays: z.estimatedDays, ranges: z.ranges }));
 }
 
-async function cartWeightGrams(userId: string): Promise<number> {
-  const items = await prisma.cartItem.findMany({ where: { cart: { userId } }, select: { quantity: true, variant: { select: { weightGrams: true } } } });
-  return items.reduce((sum, i) => sum + i.variant.weightGrams * i.quantity, 0);
+async function cartLinesForShipping(userId: string) {
+  return prisma.cartItem.findMany({ where: { cart: { userId } }, select: { variantId: true, quantity: true, variant: { select: { heightCm: true, widthCm: true, lengthCm: true, weightGrams: true, priceCents: true } } } });
 }
 
 /** Opções de frete para um endereço específico do cliente (usado tanto pela tela quanto pela criação do pedido). */
@@ -39,7 +39,11 @@ export async function getShippingOptionsForAddress(userId: string, addressId: st
   const address = await prisma.address.findFirst({ where: { id: addressId, userId } });
   if (!address) return null;
 
-  const [cart, settings, zones, weightGrams] = await Promise.all([getCartView(userId), getSettings(), loadActiveZones(), cartWeightGrams(userId)]);
+  const [cart, settings, zones, lines] = await Promise.all([getCartView(userId), getSettings(), loadActiveZones(), cartLinesForShipping(userId)]);
+  const weightGrams = lines.reduce((sum, l) => sum + l.variant.weightGrams * l.quantity, 0);
+  const quoteProducts = lines.map((l) => cartLineToQuoteProduct({ variantId: l.variantId, quantity: l.quantity, ...l.variant }));
+  const liveCorreiosOptions = await fetchLiveShippingOptions(address.cep, quoteProducts);
+
   const options = buildShippingOptions({
     cep: address.cep,
     neighborhood: address.neighborhood,
@@ -48,6 +52,7 @@ export async function getShippingOptionsForAddress(userId: string, addressId: st
     pickupEnabled: settings.pickupEnabled,
     subtotalCentsForFreeShipping: cart.totalCents,
     globalFreeShipping: Boolean(cart.freeShipping?.reached),
+    liveCorreiosOptions,
   });
   return { options, address };
 }
