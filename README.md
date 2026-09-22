@@ -13,8 +13,8 @@ Escopo completo: [`docs/briefing.pdf`](docs/briefing.pdf). Decisões aprovadas e
 | 3. Catálogo | Concluída: filtros (gênero, marca, concentração, família olfativa, tamanho, preço, disponibilidade), ordenação, paginação, busca sem acento e tolerante a erro de digitação, página de produto com seletor de tamanho, galeria e relacionados |
 | 4. Conta e autenticação | Concluída: cadastro, login, sair, confirmação de e-mail, recuperação de senha, dados, endereços com busca de CEP, lista de pedidos |
 | 5. Carrinho e cupons | Concluída: adicionar pela página do produto, quantidade com limite de estoque, cupons (percentual, valor fixo, frete grátis), desconto no Pix e progresso do frete grátis |
-| 6. Checkout e pagamentos (Mercado Pago) | Pendente |
-| 7. Frete e entrega própria | Pendente |
+| 6. Checkout e pagamentos (Mercado Pago) | Concluída: endereço, frete (placeholder Correios + zonas locais), Pix com QR Code, cartão de crédito/débito (Secure Fields), pagamento na entrega, webhook, expiração e cancelamento com devolução de estoque |
+| 7. Frete e entrega própria | Parcial: zonas de entrega própria prontas; falta trocar o placeholder dos Correios pela cotação real (Melhor Envio) |
 | 8. WhatsApp do pedido e e-mails | Pendente (a função da mensagem já existe e tem teste) |
 | 9. Painel admin | Pendente |
 | 10. Qualidade e go-live | Pendente |
@@ -35,7 +35,7 @@ npm install
 npm run db:migrate -- --name init   # (se o banco já existe, nas próximas etapas use --name auth, e assim por diante)
 npm run db:constraints        # estoque nunca negativo (pode repetir)
 npm run db:search             # ativa a busca sem acento e tolerante a erro (pode repetir)
-npm run db:seed               # 12 perfumes fictícios e 3 cupons de exemplo (BEMVINDO10, OFF20, FRETEGRATIS)
+npm run db:seed               # 12 perfumes, 3 cupons (BEMVINDO10, OFF20, FRETEGRATIS) e 1 zona de entrega (Centro do Rio)
 npm run dev                   # http://localhost:3000
 ```
 
@@ -77,6 +77,19 @@ docs/            briefing e decisões
 - Revisar as páginas legais com contador ou advogado e preencher razão social, CNPJ e e-mail.
 - Valores provisórios de parcelamento, frete grátis e Pix estão em `src/lib/settings-defaults.ts` e passam a ser editáveis no painel (Etapa 9).
 - Para uso comercial, hospedar em plano pago (o gratuito da Vercel é restrito a uso não comercial) ou em outro provedor.
+
+## Pagamentos e checkout
+
+Gateway: Mercado Pago (Checkout API, `/v1/payments`), atrás da interface `PaymentProvider` (`src/server/payments/`) — trocar de gateway no futuro é escrever outra implementação dessa interface. **Nada foi testado contra credenciais reais do Mercado Pago** (o ambiente de desenvolvimento não tem acesso à internet nem a uma conta de sandbox); revise em modo de testes antes de publicar.
+
+Variáveis necessárias:
+- `MP_ACCESS_TOKEN` — chave privada (usar a de teste primeiro)
+- `NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY` — chave pública, usada no navegador para gerar o token do cartão (nunca o número do cartão em si)
+- `MP_WEBHOOK_SECRET` — chave secreta do webhook (painel do Mercado Pago → Webhooks). Sem ela, o site não valida quem está mandando a notificação — funciona, mas fica exposto a notificações falsas.
+
+Fluxo: o checkout recalcula tudo no servidor (preço, estoque, cupom, frete), reserva o estoque de forma atômica, cria o pedido e só depois fala com o gateway. Pix expira em `pixExpirationMinutes` (padrão 30). O cron `/api/cron/expirar-pix` cancela pedidos de Pix vencidos e devolve o estoque — o plano gratuito da Vercel só permite cron diário, então configure um serviço externo como o cron-job.org batendo nessa URL a cada 10-15 minutos com o cabeçalho `Authorization: Bearer <CRON_SECRET>`, ou rode manualmente enquanto isso não estiver resolvido.
+
+Frete: nesta etapa, os Correios usam uma **tabela provisória** por região do CEP (`src/lib/shipping.ts`) — a Etapa 7 troca isso pela cotação real do Melhor Envio, sem mudar o checkout. A entrega própria já usa as zonas cadastradas no banco (o seed cria uma no Centro do Rio).
 
 ## Autenticação
 

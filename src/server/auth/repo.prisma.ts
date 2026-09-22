@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { AuthRepo } from "./service";
 
-const userSelect = { id: true, name: true, email: true, phone: true, role: true, emailVerifiedAt: true } as const;
+const userSelect = { id: true, name: true, email: true, phone: true, cpf: true, role: true, emailVerifiedAt: true } as const;
 
 const isUniqueViolation = (error: unknown) => typeof error === "object" && error !== null && "code" in error && (error as { code: unknown }).code === "P2002";
 

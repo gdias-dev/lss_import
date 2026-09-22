@@ -116,6 +116,6 @@ describe("carrinho", () => {
     expect(html).toContain("no Pix");
     expect(html).toContain("Faltam");
     expect(html).toContain("frete grátis");
-    expect(html).toContain("disabled");
+    expect(html).toContain('href="/checkout"');
   });
 });

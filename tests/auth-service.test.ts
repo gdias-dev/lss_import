@@ -14,7 +14,7 @@ function memoryRepo() {
     findUserById: async (id) => users.find((u) => u.id === id) ?? null,
     async createUser(data) {
       if (users.some((u) => u.email === data.email)) return null;
-      const user: UserRecord = { id: `u${++seq}`, ...data, role: "CUSTOMER", emailVerifiedAt: null };
+      const user: UserRecord = { id: `u${++seq}`, ...data, cpf: null, role: "CUSTOMER", emailVerifiedAt: null };
       users.push(user);
       return user;
     },

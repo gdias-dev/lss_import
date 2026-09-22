@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { CouponForm } from "@/components/carrinho/CouponForm";
 import type { CartSummary } from "@/lib/cart";
 import { formatBRL } from "@/lib/money";
@@ -47,12 +48,17 @@ export function CartSummaryPanel({ cart }: { cart: CartSummary }) {
         </div>
       )}
 
-      {/* O checkout entra na Etapa 6. Depois será um link para /checkout. */}
       <div>
-        <button type="button" disabled aria-disabled="true" className="btn-primary w-full cursor-not-allowed opacity-60">
-          Finalizar compra
-        </button>
-        <p className="mt-3 text-center text-xs text-muted">{cart.canCheckout ? "A finalização da compra chega na próxima etapa." : "Remova os itens indisponíveis para continuar."}</p>
+        {cart.canCheckout ? (
+          <Link href="/checkout" className="btn-primary block w-full text-center">
+            Finalizar compra
+          </Link>
+        ) : (
+          <button type="button" disabled aria-disabled="true" className="btn-primary w-full cursor-not-allowed opacity-60">
+            Finalizar compra
+          </button>
+        )}
+        {!cart.canCheckout && <p className="mt-3 text-center text-xs text-muted">Remova os itens indisponíveis para continuar.</p>}
       </div>
     </aside>
   );

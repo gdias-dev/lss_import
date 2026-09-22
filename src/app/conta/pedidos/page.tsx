@@ -31,17 +31,19 @@ export default async function PedidosPage() {
       ) : (
         <ul className="space-y-4">
           {orders.map((o) => (
-            <li key={o.id} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line bg-surface p-6">
-              <div>
-                <p className="font-serif text-xl text-ivory">Pedido {formatOrderNumber(o.number)}</p>
-                <p className="mt-1 text-sm text-muted">
-                  {o.createdAt.toLocaleDateString("pt-BR")} · {o._count.items} {o._count.items === 1 ? "item" : "itens"}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-ivory">{formatBRL(o.totalCents)}</p>
-                <p className="mt-1 text-sm text-gold">{ORDER_STATUS_LABEL[o.status] ?? o.status}</p>
-              </div>
+            <li key={o.id}>
+              <Link href={`/conta/pedidos/${o.id}`} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line bg-surface p-6 transition hover:border-gold/60">
+                <div>
+                  <p className="font-serif text-xl text-ivory">Pedido {formatOrderNumber(o.number)}</p>
+                  <p className="mt-1 text-sm text-muted">
+                    {o.createdAt.toLocaleDateString("pt-BR")} · {o._count.items} {o._count.items === 1 ? "item" : "itens"}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-ivory">{formatBRL(o.totalCents)}</p>
+                  <p className="mt-1 text-sm text-gold">{ORDER_STATUS_LABEL[o.status] ?? o.status}</p>
+                </div>
+              </Link>
             </li>
           ))}
         </ul>

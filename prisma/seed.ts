@@ -77,14 +77,18 @@ async function main() {
     skipDuplicates: true,
   });
 
-  // Zona de entrega própria de EXEMPLO (inativa). O dono cadastra as reais no painel.
+  // Zonas de entrega própria de EXEMPLO. A do Centro do Rio fica ATIVA para dar pra testar o checkout;
+  // o dono ajusta os valores reais (ou desativa) no painel.
   if ((await prisma.deliveryZone.count()) === 0) {
+    await prisma.deliveryZone.create({
+      data: { name: "Centro do Rio (EXEMPLO)", feeCents: 1500, freeAboveCents: 40000, allowsPayOnDelivery: true, estimatedDays: 2, active: true, neighborhoods: ["Centro"], ranges: { create: [{ cepStart: "20000000", cepEnd: "20099999" }] } },
+    });
     await prisma.deliveryZone.create({
       data: { name: "Zona local (EXEMPLO, inativa)", feeCents: 1000, active: false, ranges: { create: [{ cepStart: "00000000", cepEnd: "00000000" }] } },
     });
   }
 
-  console.log(`Seed concluído: ${BRANDS.length} marcas, ${PRODUCTS.length} produtos, ${COUPONS.length} cupons (BEMVINDO10, OFF20, FRETEGRATIS).`);
+  console.log(`Seed concluído: ${BRANDS.length} marcas, ${PRODUCTS.length} produtos, ${COUPONS.length} cupons (BEMVINDO10, OFF20, FRETEGRATIS), zona de entrega no Centro do Rio (CEP 20000-000 a 20099-999).`);
 }
 
 main()

@@ -17,6 +17,7 @@ export interface SessionUser {
   name: string;
   email: string;
   phone: string | null;
+  cpf: string | null;
   role: Role;
   emailVerifiedAt: Date | null;
 }
@@ -57,6 +58,7 @@ export const toSessionUser = (u: UserRecord | SessionUser): SessionUser => ({
   name: u.name,
   email: u.email,
   phone: u.phone,
+  cpf: u.cpf,
   role: u.role,
   emailVerifiedAt: u.emailVerifiedAt,
 });
