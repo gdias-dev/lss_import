@@ -18,7 +18,8 @@
     "db:constraints": "prisma db execute --file ./prisma/manual/001_constraints.sql --schema ./prisma/schema.prisma",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
-    "db:search": "prisma db execute --file ./prisma/manual/002_search.sql --schema ./prisma/schema.prisma"
+    "db:search": "prisma db execute --file ./prisma/manual/002_search.sql --schema ./prisma/schema.prisma",
+    "make-admin": "tsx scripts/make-admin.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

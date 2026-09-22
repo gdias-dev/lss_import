@@ -16,7 +16,7 @@ Escopo completo: [`docs/briefing.pdf`](docs/briefing.pdf). Decisões aprovadas e
 | 6. Checkout e pagamentos (Mercado Pago) | Concluída: endereço, frete (placeholder Correios + zonas locais), Pix com QR Code, cartão de crédito/débito (Secure Fields), pagamento na entrega, webhook, expiração e cancelamento com devolução de estoque |
 | 7. Frete e entrega própria | Concluída: cotação real dos Correios/transportadoras via Melhor Envio no checkout, com tabela de contingência se a API falhar; compra de etiqueta e rastreio prontos para o painel (Etapa 9) |
 | 8. WhatsApp do pedido e e-mails | Concluída: e-mails de status (pedido recebido, pagamento confirmado, cancelado) e aviso ao dono a cada novo pedido; enviado/entregue prontos para o painel (Etapa 9) ligar |
-| 9. Painel admin | Pendente |
+| 9. Painel admin | Concluída: produtos com variações e fotos, importação/exportação CSV, pedidos com mudança de status, cupons, zonas de entrega, configurações, banners, log de auditoria |
 | 10. Qualidade e go-live | Pendente |
 | 11. Fase 2: avaliações, relatórios, nota fiscal | Pendente |
 
@@ -36,6 +36,7 @@ npm run db:migrate -- --name init   # (se o banco já existe, nas próximas etap
 npm run db:constraints        # estoque nunca negativo (pode repetir)
 npm run db:search             # ativa a busca sem acento e tolerante a erro (pode repetir)
 npm run db:seed               # 12 perfumes, 3 cupons (BEMVINDO10, OFF20, FRETEGRATIS) e 1 zona de entrega (Centro do Rio)
+npm run make-admin -- seu-email@exemplo.com   # promove uma conta já cadastrada a administrador
 npm run dev                   # http://localhost:3000
 ```
 
@@ -111,6 +112,18 @@ Disparados automaticamente pelo checkout (`src/server/orders/notifications.ts`),
 - Aviso para quem toma conta da loja a cada novo pedido: envia para `STORE_OWNER_EMAIL` (se configurado no `.env`) e para qualquer usuário com papel `ADMIN`
 
 Prontos para usar, mas **sem botão na tela ainda** (a Etapa 9 liga): e-mail de "pedido enviado" (com código de rastreio) e "pedido entregue".
+
+## Painel administrativo
+
+Em `/admin`, só acessível a contas com papel `ADMIN`. Como criar o primeiro admin: cadastre uma conta normal pelo site e rode `npm run make-admin -- email@exemplo.com`.
+
+- **Produtos**: cadastro completo, variações (tamanho, preço, estoque, peso e medidas), fotos (upload direto para o Cloudinary, veja `CLOUDINARY_*` no `.env`) e importação/exportação por CSV (uma linha = uma variação; repetir produto e marca junta os tamanhos)
+- **Pedidos**: lista com filtro, detalhe, mudança de status (em separação → enviado → entregue), confirmação manual de pagamento na entrega. Ao marcar como enviado ou entregue, o e-mail correspondente (Etapa 8) é disparado sozinho
+- **Cupons, zonas de entrega e configurações da loja**: formulários diretos sobre o que já existia no banco desde etapas anteriores
+- **Banners**: aparecem na home entre o topo e os diferenciais; sem nenhum cadastrado, a home simplesmente não mostra essa seção
+- **Log de auditoria**: toda mudança de preço, estoque, status de pedido e configuração fica registrada em `AuditLog`, com quem fez e o antes/depois
+
+Pendente para a Etapa 9 ficar 100% completa: **compra automática da etiqueta e rastreio pelo Melhor Envio** — hoje, ao marcar um pedido como enviado, o admin precisa gerar a etiqueta por fora e colar o código de rastreio manualmente. A integração com o Melhor Envio para isso já existe (`src/server/shipping/melhorenvio.ts`, desde a Etapa 7), só falta o botão chamando essas funções.
 
 ## Autenticação
 

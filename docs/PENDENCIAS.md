@@ -11,6 +11,9 @@ Este arquivo junta tudo que **não dá para eu (Claude) resolver sozinho**, porq
 
 ## Configuração que dá para fazer agora (testes)
 
+- [ ] **Criar o primeiro administrador**: cadastre uma conta normal no site e rode `npm run make-admin -- seu-email@exemplo.com`. Sem isso, o painel em `/admin` não tem quem entre.
+- [ ] **Configurar o Cloudinary** (`CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` no `.env`) para conseguir subir fotos dos produtos pelo painel. Sem isso, o botão de enviar imagem no admin mostra erro.
+
 - [ ] **Criar a aplicação no Mercado Pago Developers** e pegar as **credenciais de teste** (`MP_ACCESS_TOKEN` e `NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY`, ambas de teste). Passo a passo já te expliquei no chat; posso reexplicar quando precisar.
 - [ ] **Testar o checkout inteiro** com as credenciais de teste: Pix, cartão (com os cartões de teste do Mercado Pago) e pagamento na entrega.
 - [ ] **Criar uma conta no Melhor Envio e gerar um token de sandbox** (não precisa de CNPJ para isso — funciona com CPF). No painel: Configurações → Tokens → Gerar novo token. Colar em `MELHORENVIO_TOKEN` no `.env`, junto com `STORE_ORIGIN_CEP` (o CEP de onde a loja vai despachar). Sem isso, o site usa uma tabela de frete estimada em vez do preço real.

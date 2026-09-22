@@ -10,7 +10,8 @@ export const metadata: Metadata = { title: "Entrar", robots: { index: false } };
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; redefinida?: string; verificado?: string }> }) {
   const sp = await searchParams;
   const next = safeNextPath(sp.next, "");
-  if (await getCurrentUser()) redirect(next || "/conta");
+  const user = await getCurrentUser();
+  if (user) redirect(next || (user.role === "ADMIN" ? "/admin" : "/conta"));
 
   return (
     <>

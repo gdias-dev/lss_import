@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BannerStrip } from "@/components/loja/BannerStrip";
 import { ProductCard } from "@/components/loja/ProductCard";
 import { listProducts } from "@/lib/catalog";
 import { getWhatsAppNumber } from "@/lib/env";
@@ -52,6 +53,8 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      <BannerStrip />
 
       <section aria-label="Diferenciais" className="border-b border-line">
         <ul className="container-page grid gap-8 py-10 sm:grid-cols-2 lg:grid-cols-4">

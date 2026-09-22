@@ -50,7 +50,7 @@ export async function loginAction(_prev: FormState, formData: FormData): Promise
   if (!user) return { error: "E-mail ou senha incorretos.", values };
 
   await openSession(user.id);
-  redirect(safeNextPath(raw.next));
+  redirect(safeNextPath(raw.next, user.role === "ADMIN" ? "/admin" : "/conta"));
 }
 
 export async function logoutAction(): Promise<void> {
