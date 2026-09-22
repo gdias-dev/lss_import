@@ -23,6 +23,7 @@ Este arquivo junta tudo que **não dá para eu (Claude) resolver sozinho**, porq
 - [ ] **Cadastrar a URL do webhook** (`https://seudominio.com.br/api/webhooks/mercadopago`) no painel do Mercado Pago e copiar o `MP_WEBHOOK_SECRET` gerado para o `.env` de produção.
 - [ ] **Hospedagem em plano pago** (o gratuito da Vercel não é para uso comercial) ou outro provedor.
 - [ ] **Verificar o domínio no Resend** (SPF, DKIM, DMARC) para os e-mails não caírem no spam.
+- [ ] **Definir `STORE_OWNER_EMAIL`** no `.env` de produção, para o dono (ou você) receber um aviso por e-mail a cada novo pedido, até o primeiro admin ser criado no painel (Etapa 9).
 
 ## Decisões do cliente ainda pendentes
 
@@ -37,6 +38,19 @@ Lista completa em `docs/etapa-a-aprovacao.md`. As que mais afetam o código que 
 ## Bloqueiam vender de verdade (produção) — continuação
 
 - [ ] **Conta de PRODUÇÃO do Melhor Envio com saldo.** O saldo de testes (sandbox) não vale em produção — é preciso depositar saldo real na conta do Melhor Envio para poder comprar etiquetas de verdade.
+
+## Custos das APIs usadas (fora a hospedagem já orçada)
+
+Nenhuma delas tem mensalidade fixa. Cada uma cobra do seu jeito:
+
+| Serviço | Como cobra | Estimativa |
+|---|---|---|
+| **Mercado Pago** | Taxa (%) só em cima de cada venda aprovada. Sem custo para criar a conta, testar ou ficar sem vender. | Varia por forma de pagamento e plano da conta — conferir no painel da conta do cliente quando ela existir (a taxa muda com frequência). |
+| **Melhor Envio** | A plataforma é grátis. Cobra é o preço da própria postagem (o valor real do frete), igual pagaria direto no balcão dos Correios — às vezes até mais barato. | Repassado ao cliente final no valor do frete, não é um custo da loja. |
+| **Resend** (e-mails) | Plano grátis: 3.000 e-mails por mês, até 100/dia, 1 domínio (conferido em setembro/2026). | R$ 0 no começo. Só considerar upgrade se a loja crescer muito. |
+| **Neon** (banco), **Vercel** (hospedagem), **Cloudinary** (imagens) | Já contam na estimativa de R$150-350/mês do orçamento original. | Ver `docs/etapa-a-aprovacao.md`. |
+
+Preços de serviços de terceiros mudam sem aviso — antes de decidir algo com base neles, confirme no site oficial de cada um.
 
 ## Fase 2 (depois do site no ar)
 

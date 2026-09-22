@@ -15,7 +15,7 @@ Escopo completo: [`docs/briefing.pdf`](docs/briefing.pdf). Decisões aprovadas e
 | 5. Carrinho e cupons | Concluída: adicionar pela página do produto, quantidade com limite de estoque, cupons (percentual, valor fixo, frete grátis), desconto no Pix e progresso do frete grátis |
 | 6. Checkout e pagamentos (Mercado Pago) | Concluída: endereço, frete (placeholder Correios + zonas locais), Pix com QR Code, cartão de crédito/débito (Secure Fields), pagamento na entrega, webhook, expiração e cancelamento com devolução de estoque |
 | 7. Frete e entrega própria | Concluída: cotação real dos Correios/transportadoras via Melhor Envio no checkout, com tabela de contingência se a API falhar; compra de etiqueta e rastreio prontos para o painel (Etapa 9) |
-| 8. WhatsApp do pedido e e-mails | Pendente (a função da mensagem já existe e tem teste) |
+| 8. WhatsApp do pedido e e-mails | Concluída: e-mails de status (pedido recebido, pagamento confirmado, cancelado) e aviso ao dono a cada novo pedido; enviado/entregue prontos para o painel (Etapa 9) ligar |
 | 9. Painel admin | Pendente |
 | 10. Qualidade e go-live | Pendente |
 | 11. Fase 2: avaliações, relatórios, nota fiscal | Pendente |
@@ -101,6 +101,16 @@ Variáveis do Melhor Envio (veja `docs/PENDENCIAS.md` para o passo a passo de cr
 - `STORE_ORIGIN_CEP` — CEP de onde a loja despacha (obrigatório para a cotação funcionar)
 
 Compra de etiqueta, impressão e rastreio já estão prontos em `src/server/shipping/melhorenvio.ts`, mas **sem botão na tela ainda** — a Etapa 9 (painel admin) vai chamar essas funções quando o lojista marcar um pedido como "Enviado".
+
+## E-mails de status do pedido
+
+Disparados automaticamente pelo checkout (`src/server/orders/notifications.ts`), sem precisar de nada além do Resend já configurado:
+- Pedido recebido (texto diferente para Pix pendente, cartão em análise ou pagamento na entrega)
+- Pagamento confirmado
+- Pedido cancelado (estoque insuficiente, Pix expirado ou cartão recusado — o cliente nunca vê a mensagem técnica de erro)
+- Aviso para quem toma conta da loja a cada novo pedido: envia para `STORE_OWNER_EMAIL` (se configurado no `.env`) e para qualquer usuário com papel `ADMIN`
+
+Prontos para usar, mas **sem botão na tela ainda** (a Etapa 9 liga): e-mail de "pedido enviado" (com código de rastreio) e "pedido entregue".
 
 ## Autenticação
 

@@ -11,6 +11,7 @@ import { buildShippingOptions, findShippingOption, type ShippingOption } from "@
 import { cartLineToQuoteProduct, fetchLiveShippingOptions } from "./shipping/melhorenvio";
 import { getCartView } from "./cart";
 import { getPaymentProvider, PaymentProviderError, type Payer } from "./payments";
+import { notifyAdminNewOrder, sendOrderCanceledEmail, sendOrderConfirmationEmail, sendPaymentConfirmedEmail } from "./orders/notifications";
 
 export class CheckoutError extends Error {
   constructor(message: string) {
@@ -197,6 +198,8 @@ export async function placeOrder(userId: string, input: PlaceOrderInput): Promis
   // ---- Pagamento (fora da transação: nunca segurar o banco travado esperando uma chamada de rede) ----
   if (initialStatus === OrderStatus.AGUARDANDO_PAGAMENTO_NA_ENTREGA) {
     await prisma.payment.create({ data: { orderId: created.id, provider: "manual", method: input.paymentMethod, status: PaymentStatus.PENDING, amountCents: totalCents, idempotencyKey: `manual/${created.id}` } });
+    await sendOrderConfirmationEmail(created.id);
+    await notifyAdminNewOrder(created.id);
     return { orderId: created.id, orderNumber: created.number, status: initialStatus, pix: null, cardDeclined: false };
   }
 
@@ -209,6 +212,8 @@ export async function placeOrder(userId: string, input: PlaceOrderInput): Promis
       await prisma.payment.create({
         data: { orderId: created.id, provider: provider.name, providerPaymentId: pix.providerPaymentId, method: "PIX", status: "PENDING", amountCents: totalCents, pixQrCode: pix.qrCode, pixCopyPaste: pix.qrCode, expiresAt: pix.expiresAt, rawPayload: pix.raw as Prisma.InputJsonValue, idempotencyKey: `pix/${created.id}` },
       });
+      await sendOrderConfirmationEmail(created.id);
+      await notifyAdminNewOrder(created.id);
       return { orderId: created.id, orderNumber: created.number, status: initialStatus, pix: { qrCode: pix.qrCode, qrCodeBase64: pix.qrCodeBase64, expiresAt: pix.expiresAt?.toISOString() ?? null }, cardDeclined: false };
     } catch (error) {
       await cancelAndRestoreStock(created.id, "Falha ao gerar o Pix no gateway de pagamento.");
@@ -239,6 +244,8 @@ export async function placeOrder(userId: string, input: PlaceOrderInput): Promis
 
     if (card.status === "APPROVED") {
       await prisma.order.update({ where: { id: created.id }, data: { status: "PAGO", paidAt: new Date() } });
+      await sendOrderConfirmationEmail(created.id);
+      await notifyAdminNewOrder(created.id);
       return { orderId: created.id, orderNumber: created.number, status: "PAGO", pix: null, cardDeclined: false };
     }
     if (card.status === "REJECTED" || card.status === "CANCELED") {
@@ -246,6 +253,8 @@ export async function placeOrder(userId: string, input: PlaceOrderInput): Promis
       return { orderId: created.id, orderNumber: created.number, status: "CANCELADO", pix: null, cardDeclined: true };
     }
     // PENDING (ex.: "in_process"): fica aguardando o webhook confirmar.
+    await sendOrderConfirmationEmail(created.id);
+    await notifyAdminNewOrder(created.id);
     return { orderId: created.id, orderNumber: created.number, status: initialStatus, pix: null, cardDeclined: false };
   } catch (error) {
     await cancelAndRestoreStock(created.id, "Falha ao processar o cartão no gateway de pagamento.");
@@ -273,6 +282,7 @@ export async function cancelAndRestoreStock(orderId: string, reason: string, als
     await tx.order.update({ where: { id: orderId }, data: { status: "CANCELADO", canceledAt: new Date() } });
     if (alsoDeletePayments) await tx.payment.deleteMany({ where: { orderId, status: "PENDING" } });
   });
+  await sendOrderCanceledEmail(orderId, reason);
 }
 
 // ------------------------------------------------------------ conciliação (webhook e checagem manual)
@@ -290,6 +300,7 @@ export async function reconcilePayment(providerPaymentId: string): Promise<void>
       prisma.payment.update({ where: { id: payment.id }, data: { status: "PAID", paidAt: new Date(), rawPayload: result.raw as Prisma.InputJsonValue } }),
       prisma.order.update({ where: { id: payment.orderId }, data: { status: "PAGO", paidAt: new Date() } }),
     ]);
+    await sendPaymentConfirmedEmail(payment.orderId);
     return;
   }
   if (result.status === "REJECTED" || result.status === "CANCELED") {
