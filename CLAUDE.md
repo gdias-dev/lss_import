@@ -79,6 +79,13 @@ Fora: blog, página Sobre, FAQ, feed do Instagram, pixels de anúncio, programa 
 
 Sempre que uma etapa gerar uma pendência que não dá para resolver escrevendo código (precisa de uma conta, um domínio, uma decisão do cliente etc.), adicione em `docs/PENDENCIAS.md` em vez de só mencionar no chat. Ao concluir uma pendência, marque como resolvida lá.
 
+## Melhorias feitas fora das etapas numeradas
+
+- **Busca com sugestões ao digitar** (`src/components/loja/SearchBox.tsx` + `/api/search/suggestions`): substitui o campo de busca simples do cabeçalho. Debounce de 250ms, cancela a requisição anterior se a pessoa continuar digitando, navegação por teclado (setas, Enter, Esc), limite de tentativas por IP. Reaproveita a mesma busca tolerante a erro de digitação do catálogo (`getSearchSuggestions` em `src/lib/catalog.ts`) — um bug real foi corrigido aqui: a primeira versão juntava os resultados do banco pela posição do array em vez do id, o que podia misturar produto errado com preço errado.
+- **Log de auditoria não trava mais a resposta do admin**: `logAdminAction` agora grava de verdade só DEPOIS de a resposta já ter sido enviada (`after()` do Next.js), sem exigir mudança nos 25 lugares que chamam a função.
+- **Home busca configurações e produtos em paralelo** em vez de um depois do outro.
+- **Tentativa revertida de propósito:** cache entre requisições para `getSettings()` via `unstable_cache`/`revalidateTag` foi tentado e desfeito — o Next.js 16 mudou a assinatura de `revalidateTag` (agora exige um "profile" de cache) e a combinação com `unstable_cache` não pôde ser testada ao vivo. `getSettings()` continua só com `cache()` do React (sem repetir a mesma leitura na mesma página, mas sem cache entre páginas). Se quiser revisitar isso no futuro, pesquisar a documentação atual do Next.js sobre `cacheLife`/`"use cache"` antes de tentar de novo.
+
 ## Comandos
 - Instalar: `npm install` (roda `prisma generate` sozinho)
 - Desenvolvimento: `npm run dev`

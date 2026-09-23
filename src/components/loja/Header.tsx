@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { NAV_LINKS } from "@/lib/nav";
 import { CartBadge } from "@/components/carrinho/CartBadge";
+import { SearchBox } from "@/components/loja/SearchBox";
 import { Logo } from "./Logo";
 import { MobileMenu } from "./MobileMenu";
 
@@ -23,18 +24,7 @@ export function Header() {
             </Link>
           ))}
         </nav>
-        <form action="/perfumes" role="search">
-          <label htmlFor="q" className="sr-only">
-            Buscar perfumes
-          </label>
-          <input
-            id="q"
-            name="q"
-            type="search"
-            placeholder="Buscar perfume ou marca"
-            className="w-36 rounded-full border border-line bg-surface px-4 py-2 text-sm text-ivory placeholder:text-muted focus:border-gold focus:outline-none sm:w-60"
-          />
-        </form>
+        <SearchBox />
         <Link href="/conta" aria-label="Minha conta" className="flex items-center gap-2 text-sm text-ivory/85 transition hover:text-gold">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden>
             <circle cx="12" cy="8" r="4" />

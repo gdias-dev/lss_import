@@ -81,6 +81,42 @@ async function searchIdsByText(q: string): Promise<Map<string, number>> {
   }
 }
 
+export interface SearchSuggestion {
+  slug: string;
+  name: string;
+  brandName: string;
+  imageUrl: string | null;
+  priceFromCents: number | null;
+}
+
+/** Poucos campos, poucos resultados — para a caixa de sugestões da busca, bem mais leve que searchCatalog. */
+export async function getSearchSuggestions(q: string, limit = 6): Promise<SearchSuggestion[]> {
+  if (!hasDatabase) return [];
+  const query = q.trim();
+  if (query.length < 2) return [];
+  try {
+    const scores = await searchIdsByText(query);
+    if (scores.size === 0) return [];
+    const topIds = [...scores.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([id]) => id);
+
+    const rows = await prisma.product.findMany({
+      where: { id: { in: topIds }, active: true },
+      select: { id: true, slug: true, name: true, brand: { select: { name: true } }, images: { orderBy: { position: "asc" }, take: 1, select: { url: true } }, variants: { where: { active: true }, select: { priceCents: true } } },
+    });
+    const byId = new Map(rows.map((r) => [r.id, r])); // o banco não garante a mesma ordem de "topIds"
+    return topIds
+      .map((id) => byId.get(id))
+      .filter((r): r is NonNullable<typeof r> => Boolean(r))
+      .map((r) => ({ slug: r.slug, name: r.name, brandName: r.brand.name, imageUrl: r.images[0]?.url ?? null, priceFromCents: r.variants.length > 0 ? Math.min(...r.variants.map((v) => v.priceCents)) : null }));
+  } catch (error) {
+    console.error("[catalog] getSearchSuggestions", error);
+    return [];
+  }
+}
+
 // ------------------------------------------------------------ listagem com filtros
 
 export interface CatalogPage {

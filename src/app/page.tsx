@@ -16,11 +16,11 @@ const CATEGORIES = [
 ];
 
 export default async function HomePage() {
-  const settings = await getSettings();
+  const [settings, initialProducts] = await Promise.all([getSettings(), listProducts({ featured: true, take: 8 })]);
   const rules = installmentRules(settings);
   const whatsapp = getWhatsAppNumber();
 
-  let products = await listProducts({ featured: true, take: 8 });
+  let products = initialProducts;
   if (products.length === 0) products = await listProducts({ take: 8 });
 
   const benefits = [

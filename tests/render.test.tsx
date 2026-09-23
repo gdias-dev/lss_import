@@ -119,3 +119,13 @@ describe("carrinho", () => {
     expect(html).toContain('href="/checkout"');
   });
 });
+
+describe("SearchBox", () => {
+  it("renderiza o campo de busca sem sugestões abertas por padrão", async () => {
+    const { SearchBox } = await import("@/components/loja/SearchBox");
+    const html = renderToStaticMarkup(createElement(SearchBox));
+    expect(html).toContain('role="combobox"');
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).not.toContain('role="listbox"');
+  });
+});

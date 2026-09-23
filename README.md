@@ -126,6 +126,10 @@ Em `/admin`, só acessível a contas com papel `ADMIN`. Como criar o primeiro ad
 
 Compra automática de etiqueta: na tela de um pedido pago com entrega pelos Correios, o botão **"Comprar etiqueta pelo Melhor Envio"** (`src/server/admin/shipping-label.ts`) faz tudo — cotiza, adiciona ao carrinho do Melhor Envio, confirma a compra, gera a etiqueta, baixa o PDF e consulta o rastreio — e já marca o pedido como enviado, disparando o e-mail correspondente. Exige o CNPJ da loja preenchido em Configurações e o endereço de origem completo no `.env` (`STORE_ORIGIN_STREET`, `STORE_ORIGIN_NUMBER`, `STORE_ORIGIN_NEIGHBORHOOD`, `STORE_ORIGIN_CITY`, `STORE_ORIGIN_STATE`, além do `STORE_ORIGIN_CEP` que já existia). Sem isso, o botão fica desativado e o rastreio continua podendo ser preenchido à mão, como antes. NUNCA testado contra credenciais reais — revisar em sandbox.
 
+## Busca
+
+O campo de busca do cabeçalho sugere perfumes conforme a pessoa digita (debounce de 250ms), sem precisar apertar Enter — usa `/api/search/suggestions`, com limite de tentativas por IP. Pressionar Enter ou clicar em "ver todos os resultados" continua levando para `/perfumes?q=...`, como antes.
+
 ## Autenticação
 
 Autenticação própria, pequena e testada (Auth.js v5 ainda está em beta e o v4 é legado): senha com scrypt, sessão no banco com cookie httpOnly (`__Host-` em produção), tokens de e-mail de uso único guardados só em hash, limite de tentativas no banco e mensagens que não revelam quais e-mails têm conta. Regras em `src/server/auth/service.ts`.

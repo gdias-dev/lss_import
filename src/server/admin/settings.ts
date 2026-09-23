@@ -12,5 +12,5 @@ export async function getAllSettings(): Promise<StoreSettings> {
 export async function updateSettings(adminId: string, patch: Partial<StoreSettings>): Promise<void> {
   const before = await getAllSettings();
   await prisma.$transaction(Object.entries(patch).map(([key, value]) => prisma.setting.upsert({ where: { key }, update: { value: value as never }, create: { key, value: value as never } })));
-  await logAdminAction(adminId, "UPDATE_SETTINGS", "Setting", null, before, { ...before, ...patch });
+  logAdminAction(adminId, "UPDATE_SETTINGS", "Setting", null, before, { ...before, ...patch });
 }
