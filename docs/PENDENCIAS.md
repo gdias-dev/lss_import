@@ -41,6 +41,8 @@ Lista completa em `docs/etapa-a-aprovacao.md`. As que mais afetam o código que 
 ## Bloqueiam vender de verdade (produção) — continuação
 
 - [ ] **Conta de PRODUÇÃO do Melhor Envio com saldo.** O saldo de testes (sandbox) não vale em produção — é preciso depositar saldo real na conta do Melhor Envio para poder comprar etiquetas de verdade.
+- [ ] **Endereço de origem completo no `.env`** para o botão de comprar etiqueta funcionar: `STORE_ORIGIN_STREET`, `STORE_ORIGIN_NUMBER`, `STORE_ORIGIN_NEIGHBORHOOD`, `STORE_ORIGIN_CITY`, `STORE_ORIGIN_STATE` (o `STORE_ORIGIN_CEP` já existia). Sem isso, o botão de comprar etiqueta fica desativado (mas o rastreio manual continua funcionando).
+- [ ] **CNPJ da loja preenchido em Configurações** (`/admin/config`) — também necessário para a compra automática de etiqueta.
 
 ## Custos das APIs usadas (fora a hospedagem já orçada)
 

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { confirmCashPaymentAction } from "@/app/admin/pedidos/actions";
 import { OrderStatusForm } from "@/components/admin/OrderStatusForm";
+import { ShippingLabelButton } from "@/components/admin/ShippingLabelButton";
 import { formatCep } from "@/lib/cep";
 import { getWhatsAppNumber } from "@/lib/env";
 import { formatBRL } from "@/lib/money";
@@ -10,6 +11,7 @@ import { ORDER_STATUS_LABEL } from "@/lib/order-status";
 import { buildWhatsAppLink, formatOrderNumber } from "@/lib/whatsapp";
 import { requireAdmin } from "@/server/auth/guards";
 import { getAdminOrder } from "@/server/admin/orders";
+import { isMelhorEnvioConfigured } from "@/server/admin/shipping-label";
 
 export const metadata: Metadata = { title: "Detalhe do pedido" };
 
@@ -94,6 +96,11 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
                 Rastreio: {order.shipment.trackingCode} ({order.shipment.carrier})
               </p>
             )}
+            {order.shipment?.labelUrl && (
+              <a href={order.shipment.labelUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm text-gold underline-offset-2 hover:underline">
+                Baixar etiqueta (PDF)
+              </a>
+            )}
           </div>
           <div>
             <h2 className="eyebrow mb-2">Pagamento</h2>
@@ -115,6 +122,12 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
               </form>
             )}
           </div>
+          {order.shippingMethod === "CORREIOS" && !order.shipment?.trackingCode && ["PAGO", "EM_SEPARACAO"].includes(order.status) && (
+            <div className="rounded-2xl border border-line bg-surface p-6">
+              <h2 className="eyebrow mb-3">Etiqueta dos Correios</h2>
+              <ShippingLabelButton orderId={order.id} configured={isMelhorEnvioConfigured()} />
+            </div>
+          )}
           <OrderStatusForm orderId={order.id} currentStatus={order.status} />
         </div>
       </div>

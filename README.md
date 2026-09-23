@@ -124,7 +124,7 @@ Em `/admin`, só acessível a contas com papel `ADMIN`. Como criar o primeiro ad
 - **Banners**: aparecem na home entre o topo e os diferenciais; sem nenhum cadastrado, a home simplesmente não mostra essa seção
 - **Log de auditoria**: toda mudança de preço, estoque, status de pedido e configuração fica registrada em `AuditLog`, com quem fez e o antes/depois
 
-Pendente para a Etapa 9 ficar 100% completa: **compra automática da etiqueta e rastreio pelo Melhor Envio** — hoje, ao marcar um pedido como enviado, o admin precisa gerar a etiqueta por fora e colar o código de rastreio manualmente. A integração com o Melhor Envio para isso já existe (`src/server/shipping/melhorenvio.ts`, desde a Etapa 7), só falta o botão chamando essas funções.
+Compra automática de etiqueta: na tela de um pedido pago com entrega pelos Correios, o botão **"Comprar etiqueta pelo Melhor Envio"** (`src/server/admin/shipping-label.ts`) faz tudo — cotiza, adiciona ao carrinho do Melhor Envio, confirma a compra, gera a etiqueta, baixa o PDF e consulta o rastreio — e já marca o pedido como enviado, disparando o e-mail correspondente. Exige o CNPJ da loja preenchido em Configurações e o endereço de origem completo no `.env` (`STORE_ORIGIN_STREET`, `STORE_ORIGIN_NUMBER`, `STORE_ORIGIN_NEIGHBORHOOD`, `STORE_ORIGIN_CITY`, `STORE_ORIGIN_STATE`, além do `STORE_ORIGIN_CEP` que já existia). Sem isso, o botão fica desativado e o rastreio continua podendo ser preenchido à mão, como antes. NUNCA testado contra credenciais reais — revisar em sandbox.
 
 ## Autenticação
 

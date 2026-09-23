@@ -6,6 +6,7 @@ import { fieldErrorsOf, formDataToObject } from "@/lib/validators/auth";
 import { orderStatusSchema } from "@/lib/validators/admin";
 import { requireAdmin } from "@/server/auth/guards";
 import { changeOrderStatus, confirmCashPayment } from "@/server/admin/orders";
+import { purchaseShippingLabel } from "@/server/admin/shipping-label";
 
 export async function changeOrderStatusAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const admin = await requireAdmin();
@@ -18,6 +19,16 @@ export async function changeOrderStatusAction(_prev: FormState, formData: FormDa
   revalidatePath(`/admin/pedidos/${orderId}`);
   revalidatePath("/admin/pedidos");
   return { ok: true, message: "Status atualizado." };
+}
+
+export async function purchaseShippingLabelAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const admin = await requireAdmin();
+  const orderId = String(formData.get("orderId") ?? "");
+  const result = await purchaseShippingLabel(admin.id, orderId);
+  if (!result.ok) return { error: result.message };
+  revalidatePath(`/admin/pedidos/${orderId}`);
+  revalidatePath("/admin/pedidos");
+  return { ok: true, message: result.trackingCode ? `Etiqueta comprada! Rastreio: ${result.trackingCode}.` : "Etiqueta comprada! O rastreio ainda não está disponível, confira em alguns minutos." };
 }
 
 export async function confirmCashPaymentAction(formData: FormData): Promise<void> {
