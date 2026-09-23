@@ -6,6 +6,7 @@ import type { FormState } from "@/lib/form-state";
 import { fieldErrorsOf, formDataToObject } from "@/lib/validators/auth";
 import { brandSchema, productSchema, variantSchema } from "@/lib/validators/admin";
 import { requireAdmin } from "@/server/auth/guards";
+import { checkRateLimits, rateLimitMessage } from "@/server/rate-limit";
 import {
   addProductImage,
   createProduct,
@@ -20,7 +21,6 @@ import {
 import { buildProductsCsv } from "@/server/admin/csv";
 import { importProductsFromCsv } from "@/server/admin/csv-import";
 import { prisma } from "@/lib/prisma";
-import { checkRateLimits, rateLimitMessage } from "@/server/rate-limit";
 
 export async function saveProductAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const admin = await requireAdmin();

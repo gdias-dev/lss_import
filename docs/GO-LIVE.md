@@ -1,84 +1,72 @@
-# Checklist de go-live
+# Checklist técnico de lançamento
 
-Siga nesta ordem. Cada item tem uma forma de confirmar que está realmente pronto — não marque só de olho.
+Diferente de `docs/PENDENCIAS.md` (o que falta configurar ou decidir), este arquivo é o **roteiro de testes** para rodar antes de anunciar a loja como "no ar de verdade". Vá marcando conforme testar.
 
-## 1. Antes de tudo
+## 1. Ambiente e configuração
 
-- [ ] CNPJ ou MEI do cliente ativo
-- [ ] Domínio comprado e apontado (DNS) para a Vercel
-- [ ] Conta do Mercado Pago **de produção** criada em nome do cliente, com CNPJ vinculado
+- [ ] `.env` de produção preenchido na Vercel (nunca commitado): `DATABASE_URL`, `DIRECT_URL`, `AUTH`, `RESEND_API_KEY`, `EMAIL_FROM`, `WHATSAPP_NUMBER`, `MP_ACCESS_TOKEN` e `NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY` **de produção** (sem `TEST-`), `MP_WEBHOOK_SECRET`, `MELHORENVIO_TOKEN` de produção, `STORE_ORIGIN_CEP`, `CLOUDINARY_*`, `CRON_SECRET`, `STORE_OWNER_EMAIL`, `NEXT_PUBLIC_SITE_URL` com o domínio real
+- [ ] Domínio configurado na Vercel e DNS apontando certo (confira com `dig` ou o próprio painel)
+- [ ] Certificado HTTPS ativo (a Vercel emite automaticamente; só confirmar que carrega com cadeado)
+- [ ] `npm run db:migrate:deploy` (ou equivalente) rodado no banco de produção — **nunca** rodar `db:seed` em produção com os dados fictícios
+- [ ] `npm run db:constraints` e `npm run db:search` rodados uma vez no banco de produção
+- [ ] Primeiro administrador criado com `npm run make-admin -- email-do-dono@...`
 
-## 2. Variáveis de ambiente de produção
+## 2. Compra de ponta a ponta (o mais importante)
 
-Confira uma por uma no painel da Vercel (nunca reaproveite as de teste):
+Faça uma compra real, com dinheiro de verdade, e depois cancele/estorne:
 
-- [ ] `DATABASE_URL` / `DIRECT_URL` — banco de produção (pode ser o mesmo Neon, em outro branch, ou um projeto separado)
-- [ ] `NEXT_PUBLIC_SITE_URL` — o domínio real, com `https://`
-- [ ] `RESEND_API_KEY` + `EMAIL_FROM` — com o **domínio verificado** no Resend (veja item 4)
-- [ ] `MELHORENVIO_TOKEN` (produção, não sandbox) + `MELHORENVIO_SANDBOX=false` + `STORE_ORIGIN_CEP`
-- [ ] `MP_ACCESS_TOKEN` + `NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY` — as de **produção** (sem prefixo `TEST-`)
-- [ ] `MP_WEBHOOK_SECRET` — gerado depois de cadastrar a URL do webhook (item 6)
-- [ ] `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET`
-- [ ] `CRON_SECRET` — uma senha longa qualquer, inventada por você
-- [ ] `STORE_OWNER_EMAIL` — quem recebe o aviso de novo pedido além dos admins cadastrados
+- [ ] Pix: gerar, pagar de verdade pelo app do banco, confirmar que o pedido muda para "Pago" sozinho (webhook) em até 1 minuto
+- [ ] Cartão de crédito: uma compra aprovada e, se possível, uma recusada de propósito (cartão sem limite) para ver a mensagem ao cliente
+- [ ] Pagamento na entrega: simular um pedido nessa modalidade e confirmar manualmente no painel
+- [ ] Conferir que o e-mail de cada etapa chegou (não só apareceu no terminal) e não caiu no spam
+- [ ] Testar o botão de WhatsApp na confirmação do pedido
 
-## 3. Banco de dados de produção
+## 3. Webhook do Mercado Pago
 
-- [ ] `npm run db:deploy` (roda `prisma migrate deploy`) contra o banco de produção
-- [ ] `npm run db:constraints` e `npm run db:search` rodados uma vez
-- [ ] **NÃO rode `db:seed` em produção** — ele foi feito para dados de teste
-- [ ] Primeiro produto de verdade cadastrado pelo painel (ou importado por CSV)
-- [ ] `npm run make-admin -- email-do-dono@...` rodado com a variável `DATABASE_URL` de produção
+- [ ] Cadastrado no painel do Mercado Pago apontando para `https://SEUDOMINIO/api/webhooks/mercadopago`
+- [ ] `MP_WEBHOOK_SECRET` copiado para o `.env` de produção
+- [ ] Simular uma notificação de teste pelo próprio painel do Mercado Pago e conferir nos logs da Vercel que ela foi aceita (não silenciosamente ignorada por assinatura inválida)
 
-## 4. E-mail
+## 4. Frete
 
-- [ ] Domínio verificado no Resend (SPF, DKIM, DMARC) — confira o status "Verified" no painel
-- [ ] Um e-mail de teste (cadastro, recuperação de senha) chegou de verdade, sem cair no spam
+- [ ] Cotação real do Melhor Envio aparecendo no checkout (não a tabela de contingência) — se aparecer "estimativa" no nome da opção, o token não está configurado ou a chamada está falhando
+- [ ] `STORE_ORIGIN_CEP` é o CEP de onde a loja realmente despacha
+- [ ] Zonas de entrega própria cadastradas com os bairros e taxas reais (a de exemplo do seed pode ser desativada ou apagada)
 
-## 5. Frete
+## 5. E-mail
 
-- [ ] `STORE_ORIGIN_CEP` é o CEP real de onde a loja despacha
-- [ ] Peso e dimensões dos produtos cadastrados batem com a realidade (afeta o preço do frete)
-- [ ] Zonas de entrega própria cadastradas com taxas e bairros reais (a de exemplo do seed pode ser apagada)
-- [ ] Uma cotação de frete real testada no checkout, com CEP de verdade
+- [ ] Domínio verificado no Resend (SPF, DKIM, DMARC) — sem isso, os e-mails têm grande chance de cair no spam
+- [ ] Cadastro, confirmação de e-mail, recuperação de senha e todos os e-mails de pedido testados com uma conta de e-mail de verdade (Gmail, Outlook), não só o próprio terminal
 
-## 6. Pagamento — o passo mais importante
+## 6. Cron (limpeza e expiração)
 
-- [ ] Site publicado com domínio final (o webhook não funciona em `localhost`)
-- [ ] No painel do Mercado Pago, cadastre a URL do webhook: `https://seudominio.com.br/api/webhooks/mercadopago`
-- [ ] Copie o **Webhook Secret** gerado e coloque em `MP_WEBHOOK_SECRET`
-- [ ] **Faça uma compra real de valor baixo** (Pix e cartão) com dinheiro de verdade e confirme:
-  - [ ] O pagamento aparece como aprovado no site
-  - [ ] O e-mail de confirmação chega
-  - [ ] O dinheiro aparece na conta do Mercado Pago do cliente
-  - [ ] Estorne essa compra de teste depois
+- [ ] `/api/cron/limpar` e `/api/cron/expirar-pix` configurados em algum agendador (a Vercel Hobby só roda cron 1x/dia — usar cron-job.org ou similar para o de expirar-pix, a cada 10-15 min)
+- [ ] Testar manualmente uma vez cada rota com o `CRON_SECRET` certo, conferir que devolve `200` e não `401`
 
-## 7. Cron (tarefas automáticas)
+## 7. Segurança
 
-- [ ] Configurado um serviço externo (ex.: cron-job.org) chamando `/api/cron/expirar-pix` a cada 10-15 minutos, com o cabeçalho `Authorization: Bearer <CRON_SECRET>`
-- [ ] `/api/cron/limpar` continua no `vercel.json` (roda 1x por dia automaticamente, sem configuração extra)
+- [ ] Cabeçalhos de segurança presentes (confira em [securityheaders.com](https://securityheaders.com) depois do domínio estar no ar): CSP, HSTS, X-Frame-Options, Referrer-Policy
+- [ ] Nenhuma variável de ambiente com prefixo `NEXT_PUBLIC_` contém segredo (só `NEXT_PUBLIC_SITE_URL` e `NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY`, que são públicas por natureza)
+- [ ] `.env` não está no repositório (confira com `git log --all --full-history -- .env`)
+- [ ] Testar login errado várias vezes seguidas e confirmar que o limite de tentativas bloqueia (mensagem "muitas tentativas")
 
-## 8. LGPD e páginas legais
+## 8. LGPD
 
-- [ ] Política de privacidade, termos e trocas revisados com o CNPJ e a razão social reais (hoje têm campos `[RAZÃO SOCIAL]`, `[CNPJ]` para preencher)
-- [ ] E-mail de contato para pedidos de acesso/exclusão de dados (LGPD art. 18) definido e testado
-- [ ] Nenhum cookie de rastreamento ou anúncio está sendo usado (confirmado: este projeto não usa nenhum) — por isso não é necessário banner de cookies
+- [ ] Textos de privacidade, termos e trocas revisados por quem entende de direito do consumidor (hoje são rascunhos) e com CNPJ e razão social preenchidos
+- [ ] Aviso de cookies aparecendo no primeiro acesso e sumindo depois de aceitar
 
-## 9. Segurança
+## 9. SEO
 
-- [ ] `NODE_ENV=production` (a Vercel já define isso sozinha)
-- [ ] Testado que `/admin` redireciona para o login quando deslogado
-- [ ] Testado que uma conta comum não consegue abrir `/admin` (deve cair na home)
-- [ ] Content-Security-Policy testada numa compra real (abra o console do navegador durante o checkout e confira se não aparece nenhum erro de CSP bloqueando o Mercado Pago)
+- [ ] Site enviado ao [Google Search Console](https://search.google.com/search-console) com o `sitemap.xml`
+- [ ] Testar 2-3 páginas de produto na [ferramenta de teste de dados estruturados do Google](https://search.google.com/test/rich-results)
+- [ ] Título e descrição de cada página revisados (confira em `view-source:` se o `<title>` faz sentido)
 
-## 10. SEO
+## 10. Desempenho
 
-- [ ] `NEXT_PUBLIC_SITE_URL` correto (afeta o sitemap e os dados estruturados)
-- [ ] Site cadastrado no Google Search Console, com o sitemap (`/sitemap.xml`) enviado
-- [ ] Logo e cores oficiais do cliente aplicadas (hoje o site usa um logo de texto provisório)
+- [ ] Rodar o site publicado no [PageSpeed Insights](https://pagespeed.web.dev) — mirar acima de 90 no mobile
+- [ ] Fotos dos produtos em tamanho razoável antes de subir (o Cloudinary otimiza, mas um arquivo de 10 MB ainda demora para o navegador processar o envio)
 
-## 11. Por último
+## 11. Depois de tudo publicado
 
-- [ ] Backup do banco confirmado (o Neon faz automaticamente, mas confira nas configurações do projeto)
-- [ ] Plano pago da Vercel ativado, se o uso for comercial (o gratuito não é para isso)
-- [ ] Avisar o cliente como acessar o painel (`/admin`) e onde encontrar este documento e o `docs/PENDENCIAS.md`
+- [ ] Backup automático do banco confirmado (o Neon faz point-in-time restore no plano pago; confirme o prazo de retenção)
+- [ ] Convidar 2-3 pessoas de confiança para testar a compra antes de divulgar para o público

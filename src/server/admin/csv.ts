@@ -6,6 +6,9 @@
  */
 const HEADER = ["marca", "produto", "genero", "concentracao", "familia", "tamanho_ml", "preco", "preco_de", "estoque", "peso_g", "altura_cm", "largura_cm", "comprimento_cm", "descricao", "notas_topo", "notas_coracao", "notas_fundo"] as const;
 
+/** Acima disso a ação levaria tempo demais (cada linha grava no banco em sequência). Dividir em arquivos menores. */
+export const MAX_CSV_ROWS = 2000;
+
 export interface CsvRow {
   line: number;
   brand: string;
@@ -79,6 +82,7 @@ export function parseProductsCsv(text: string): { rows: CsvRow[]; errors: CsvErr
   const missing = HEADER.filter((h) => !header.includes(h));
   if (missing.length > 0) return { rows: [], errors: [{ line: 1, message: `Colunas faltando: ${missing.join(", ")}` }] };
   const idx = Object.fromEntries(HEADER.map((h) => [h, header.indexOf(h)])) as Record<(typeof HEADER)[number], number>;
+  if (lines.length - 1 > MAX_CSV_ROWS) return { rows: [], errors: [{ line: 1, message: `Máximo de ${MAX_CSV_ROWS} linhas por arquivo (este tem ${lines.length - 1}). Divida em arquivos menores.` }] };
 
   const rows: CsvRow[] = [];
   for (let i = 1; i < lines.length; i++) {

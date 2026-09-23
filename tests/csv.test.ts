@@ -66,3 +66,21 @@ describe("buildProductsCsv", () => {
     expect(rows[0]).toMatchObject({ brand: "Marca, Especial", product: 'Produto "X"', priceCents: 28990 });
   });
 });
+
+describe("limite de linhas", () => {
+  it("recusa um arquivo com mais linhas do que o permitido", async () => {
+    const { MAX_CSV_ROWS } = await import("@/server/admin/csv");
+    const body = Array.from({ length: MAX_CSV_ROWS + 1 }, (_, i) => `Marca,Produto ${i},feminino,edp,,50,100,,5,300,12,8,8,,,,`).join("\n");
+    const { rows, errors } = parseProductsCsv(`${HEADER}\n${body}`);
+    expect(rows).toHaveLength(0);
+    expect(errors[0]!.message).toMatch(/Máximo de/);
+  });
+
+  it("aceita um arquivo dentro do limite", async () => {
+    const { MAX_CSV_ROWS } = await import("@/server/admin/csv");
+    const body = Array.from({ length: MAX_CSV_ROWS }, (_, i) => `Marca,Produto ${i},feminino,edp,,50,100,,5,300,12,8,8,,,,`).join("\n");
+    const { rows, errors } = parseProductsCsv(`${HEADER}\n${body}`);
+    expect(errors).toEqual([]);
+    expect(rows).toHaveLength(MAX_CSV_ROWS);
+  });
+});

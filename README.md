@@ -134,7 +134,7 @@ Em produção defina `RESEND_API_KEY`, `EMAIL_FROM` (domínio verificado no Rese
 
 ## Segurança
 
-Nunca commite o `.env`. Dados de cartão nunca passam pelo servidor. Cabeçalhos de segurança (incluindo Content-Security-Policy) em `next.config.ts` — a CSP libera o SDK do Mercado Pago e o Cloudinary; teste um pagamento real e olhe o console do navegador antes de publicar (veja `docs/GO-LIVE.md`).
+Nunca commite o `.env`. Dados de cartão nunca passam pelo servidor. Cabeçalhos de segurança em `next.config.ts`: Content-Security-Policy (libera o SDK do Mercado Pago e o Cloudinary; teste um pagamento real e olhe o console do navegador antes de publicar — veja `docs/GO-LIVE.md`), HSTS, X-Frame-Options e Referrer-Policy. Limite de tentativas no banco cobrindo login, recuperação de senha, cupom, CEP, checkout e também a assinatura de upload de imagem e a importação de CSV no admin. Aviso de cookies no rodapé de toda página (`src/components/loja/CookieNotice.tsx`), guardado só no `localStorage` do navegador — o site não usa cookie de publicidade ou análise.
 
 ## Cache e revalidação
 
